@@ -34,6 +34,7 @@ jobs:
 
       - name: Publish RC to Test PyPI
         run: |
-          poetry version ${{ steps.create_tag.outputs.tag }}
+          poetry version ${{ steps.rc_tag.outputs.tag }}
           poetry build
-          poetry publish --username '${{ secrets.PYPI_USERNAME }}' --password '${{ secrets.TEST_PYPI_PASSWORD }}'
+          poetry config repositories.testpypi https://test.pypi.org/legacy/
+          poetry publish -r testpypi --username '${{ secrets.PYPI_USERNAME }}' --password '${{ secrets.TEST_PYPI_PASSWORD }}'
