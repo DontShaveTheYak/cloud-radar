@@ -15,11 +15,15 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![Contributors][contributors-shield]][contributors-url]
+[![Python][python-shield]][pypi-url]
+[![Latest][version-shield]][pypi-url]
+[![Tests][test-shield]][test-url]
+[![Coverage][codecov-shield]][codecov-url]
+[![License][license-shield]][license-url]
+<!-- [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+[![Issues][issues-shield]][issues-url] -->
 
 
 
@@ -81,14 +85,14 @@
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-This project is a wrapper around Taskcat. Taskcat is great tool for ensuring your Cloudformation Template can be deployed in multiple AWS Regions. Cloud-Radar enhances Taskcat by making it easier to write more complete functional tests.
+This project is a wrapper around Taskcat. Taskcat is a great tool for ensuring your Cloudformation Template can be deployed in multiple AWS Regions. Cloud-Radar enhances Taskcat by making it easier to write more complete functional tests.
 
 Here's How:
 * You can interact with the deployed resources directly with tools you already know like boto3.
-* You can control the lifecycle of the stack. This allows testing if resources were retained after the stacks was deleted.
-* You can dynamicly generate taskcat projects, tests and template parameters with out harcoding them in a config file.
+* You can control the lifecycle of the stack. This allows testing if resources were retained after the stacks were deleted.
+* You can dynamically generate taskcat projects, tests and template parameters without hardcoding them in a config file.
 
-This prject is new and it's possible not all features or functionality of Taskcat is supported. If you find something missing or have a use case that isn't covered then please let me know =)
+This project is new and it's possible not all features or functionality of Taskcat are supported. If you find something missing or have a use case that isn't covered then please let me know =)
 
 ### Built With
 
@@ -97,7 +101,7 @@ This prject is new and it's possible not all features or functionality of Taskca
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Cloud-Radar is avaliable as an easy to install pip package.
+Cloud-Radar is available as an easy to install pip package.
 
 ### Prerequisites
 
@@ -121,14 +125,14 @@ from cloud_radar import Test
 # Test is a context manager that makes sure your stacks are deleted after testing.
 
 # test-name is the name of your test from your taskcat project file.
-# ./project_dir is the path to the folder that contains your cloudformation template
+# ./project_dir is the path to the folder that contains your Cloudformation template
 # and taskcat config file.
 with Test('test-name', './project_dir') as stacks:
     # Stacks will be created and returned as a list in the stacks variable.
 
     for stack in stacks:
         # stack will be an instance of Taskcat's Stack class.
-        # It has all the expected properites like parameters, outputs and resources
+        # It has all the expected properties like parameters, outputs and resources
 
         print(f"Testing {stack.name}")
 
@@ -149,7 +153,7 @@ with Test('test-name', './project_dir') as stacks:
 # Once the test is over then all resources will be cleaned up.
 ```
 
-You can also supply a Taskcat config as a python dictonary.
+You can also supply a Taskcat config as a python dictionary.
 
 ```python
 config = {
@@ -226,6 +230,7 @@ _For more examples, please refer to how we test [Cloud-Radar](./tests/test_e2e.p
 <!-- ROADMAP -->
 ## Roadmap
 
+- Python 3.7 support
 - Add the ability to update a stack instance to Taskcat.
 - Add logging to Cloud-Radar
 - Add logo
@@ -235,9 +240,9 @@ See the [open issues](https://github.com/DontShaveTheYak/cloud-radar/issues) for
 <!-- CONTRIBUTING -->
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-This project uses poetry to mangage dependcies and pre-commit to run formating, linting and tests. You will need to have both installed to your system as well as python 3.9.
+This project uses poetry to manage dependencies and pre-commit to run formatting, linting and tests. You will need to have both installed to your system as well as python 3.9.
 
 1. Fork the Project
 2. Setup environment (`poetry install`)
@@ -267,6 +272,13 @@ Levi - [@shadycuz_cuz](https://twitter.com/shady_cuz)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[python-shield]: https://img.shields.io/pypi/pyversions/cloud-radar?style=for-the-badge
+[version-shield]: https://img.shields.io/pypi/v/cloud-radar?label=latest&style=for-the-badge
+[pypi-url]: https://pypi.org/project/cloud-radar/
+[test-shield]: https://img.shields.io/github/workflow/status/DontShaveTheYak/cloud-radar/Tests?label=Tests&style=for-the-badge
+[test-url]: https://github.com/DontShaveTheYak/cloud-radar/actions?query=workflow%3ATests+branch%3Amaster
+[codecov-shield]: https://img.shields.io/codecov/c/gh/DontShaveTheYak/cloud-radar?color=green&style=for-the-badge&token=NE5C92139X
+[codecov-url]: https://codecov.io/gh/DontShaveTheYak/cloud-radar
 [contributors-shield]: https://img.shields.io/github/contributors/DontShaveTheYak/cloud-radar.svg?style=for-the-badge
 [contributors-url]: https://github.com/DontShaveTheYak/cloud-radar/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/DontShaveTheYak/cloud-radar.svg?style=for-the-badge

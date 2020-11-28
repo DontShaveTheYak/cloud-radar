@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  pull_request:
+    types: closed
+
+jobs:
+  tag:
+    name: Test PyPI
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged && github.base_ref == 'develop'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@master
+
+      - name: Create RC Tag
+        id: rc_tag
+        uses: K-Phoen/semver-release-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_branch: develop
+          release_strategy: tag
+          tag_format: "v%major%.%minor%.%patch%-rc"
+
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+          architecture: x64
+
+      - name: Setup Poetry
+        run: pip install poetry==1.1.4
+
+      - name: Publish RC to Test PyPI
+        run: |
+          poetry version ${{ steps.create_tag.outputs.tag }}
+          poetry build
+          poetry publish --username ${{ secrets.PYPI_USERNAME }} --password ${{ secrets.TEST_PYPI_PASSWORD }}

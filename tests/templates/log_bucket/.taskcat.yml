@@ -1,0 +1,12 @@
+---
+project:
+  name: taskcat-test-logbucket
+  regions:
+    - us-east-1
+    - us-east-2
+tests:
+  log-bucket:
+    template: ./log_bucket.yaml
+    parameters:
+      BucketPrefix: 'taskcat-$[taskcat_random-string]'
+      KeepBucket: 'FALSE'
