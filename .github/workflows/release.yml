@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  pull_request:
+    types: closed
+
+jobs:
+  release_rc:
+    name: Release to Test PyPI
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged && github.base_ref == 'develop'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@master
+
+      - name: Create RC Tag
+        id: rc_tag
+        uses: K-Phoen/semver-release-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_branch: develop
+          release_strategy: tag
+          tag_format: "v%major%.%minor%.%patch%-rc"
+
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+          architecture: x64
+
+      - name: Setup Poetry
+        run: pip install poetry==1.1.4
+
+      - name: Publish RC to Test PyPI
+        if: steps.rc_tag.outputs.tag
+        run: |
+          poetry version ${{ steps.rc_tag.outputs.tag }}
+          poetry build
+          poetry config repositories.testpypi https://test.pypi.org/legacy/
+          poetry publish -r testpypi --username '${{ secrets.PYPI_USERNAME }}' --password '${{ secrets.TEST_PYPI_PASSWORD }}'
+  release:
+    name: Release to PyPI
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged && github.base_ref == 'master'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@master
+
+      - name: Create Tag
+        id: create_tag
+        uses: K-Phoen/semver-release-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_branch: master
+          release_strategy: tag
+
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+          architecture: x64
+
+      - name: Setup Poetry
+        run: pip install poetry==1.1.4
+
+      - name: Publish to PyPI
+        if: steps.create_tag.outputs.tag
+        run: |
+          poetry version ${{ steps.create_tag.outputs.tag }}
+          poetry build
+          poetry publish --username '${{ secrets.PYPI_USERNAME }}' --password '${{ secrets.PYPI_PASSWORD }}'
+
+      - name: Create Release
+        if: steps.create_tag.outputs.tag
+        uses: Roang-zero1/github-create-release-action@master
+        with:
+          created_tag: ${{ steps.create_tag.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
