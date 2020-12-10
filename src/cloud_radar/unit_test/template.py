@@ -12,6 +12,15 @@ class Template:
     and conditions can be rendered into their final form for testing.
     """
 
+    AccountId: str = "5" * 12
+    NotificationARNs: list = []
+    NoValue: str = ""  # Not yet implemented
+    Partition: str = "aws"  # Other regions not implemented
+    Region: str = "us-east-1"
+    StackId: str = ""  # Not yet implemented
+    StackName: str = ""  # Not yet implemented
+    URLSuffix: str = "amazonaws.com"  # Other regions not implemented
+
     def __init__(self, template_path: Union[str, Path]) -> None:
         """Loads a Cloudformation template from a file and saves
         it as a dictionary.
@@ -27,6 +36,7 @@ class Template:
 
         self.raw: str = raw
         self.template: dict = self.load()
+        self.Region = Template.Region
 
     def load(self) -> dict:
 
@@ -38,7 +48,9 @@ class Template:
 
         return template
 
-    def render(self, params: Dict[str, str] = None, region: str = "us-east-1") -> dict:
+    def render(
+        self, params: Dict[str, str] = None, region: Union[str, None] = None
+    ) -> dict:
         """Solves all conditionals, references and pseudo variables using
         the passed in parameters. After rendering the template all resources
         that wouldn't get deployed because of a condtion statement are removed.
@@ -51,7 +63,8 @@ class Template:
             dict: The rendered template.
         """  # noqa: B950
 
-        self.region = region
+        if region:
+            self.Region = region
 
         self.template = self.load()
         self.set_parameters(params)
@@ -117,11 +130,7 @@ class Template:
         def replace_var(m):
             var = m.group(2)
 
-            if "AWS::" in var:
-                # return var.replace('AWS::', '')
-                return self.region
-
-            return self.template["Parameters"][var]["Value"]
+            return self.r_ref(var)
 
         reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
 
@@ -129,6 +138,23 @@ class Template:
             return re.sub(reVar, replace_var, function).replace("${!", "${")
 
         return function.replace("${!", "${")
+
+    def r_ref(self, function: str):
+        """
+        docstring
+        """
+
+        if "AWS::" in function:
+            pseudo = function.replace("AWS::", "")
+            try:
+                return getattr(self, pseudo)
+            except AttributeError:
+                raise Exception(f"Unrecognized AWS Pseduo variable: '{function}'.")
+
+        if function in self.template["Parameters"]:
+            return self.template["Parameters"][function]["Value"]
+        else:
+            return function
 
     def resolve_values(self, data: Any) -> Any:
         """Recurses through a Cloudformation template. Solving all
@@ -145,10 +171,7 @@ class Template:
             for key, value in data.items():
 
                 if key == "Ref":
-                    if value in self.template["Parameters"]:
-                        return self.template["Parameters"][value]["Value"]
-                    else:
-                        return value
+                    return self.r_ref(value)
 
                 value = self.resolve_values(value)
 

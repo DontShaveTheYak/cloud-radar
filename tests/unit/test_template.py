@@ -72,7 +72,7 @@ def test_render_defaults(mock_resolve, mock_params, mock_load, mock_open):
 
     result = template.render(params)
 
-    assert template.region == region, "Should set a default region"
+    assert template.Region == region, "Should set a default region"
 
     mock_load.assert_called()
     mock_params.assert_called_once_with(params)
@@ -99,7 +99,7 @@ def test_render_override(mock_resolve, mock_params, mock_load, mock_open):
 
     result = template.render(params, region)
 
-    assert template.region == region, "Should use our passed in region"
+    assert template.Region == region, "Should use our passed in region"
 
     assert result["Resources"] == {"test2": {}}, "Should remove test resource"
 
@@ -149,7 +149,7 @@ def test_sub(mock_load, mock_open):
 
     template = Template("fake.yml")
 
-    template.region = "us-east-1"
+    template.Region = "us-east-1"
 
     result = template.r_sub("${Test}")
 
@@ -161,11 +161,15 @@ def test_sub(mock_load, mock_open):
 
     result = template.r_sub("${AWS::Region}")
 
-    assert result == template.region, "Should render Pseudo parameters."
+    assert result == template.Region, "Should render Pseudo parameters."
 
     result = template.r_sub("${AWS::Region} ${Test} ${!BASH_VAR}")
 
     assert result == "us-east-1 test ${BASH_VAR}", "Should render multiple parameters."
+
+    result = template.r_sub("${AWS::AccountId}")
+
+    assert result == Template.AccountId, "Should render pseduovars."
 
 
 @patch("builtins.open", new_callable=mock_open, read_data="{'test': 'test'}")
