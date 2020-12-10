@@ -31,6 +31,12 @@ def test_log_retain(template):
 
     assert "LogsBucket" not in result["Resources"]
 
-    bucket_name = result["Resources"]["RetainLogsBucket"]["Properties"]["BucketName"]
+    bucket = result["Resources"]["RetainLogsBucket"]
+
+    assert "DeletionPolicy" in bucket
+
+    assert bucket["DeletionPolicy"] == "Retain"
+
+    bucket_name = bucket["Properties"]["BucketName"]
 
     assert "us-west-2" in bucket_name
