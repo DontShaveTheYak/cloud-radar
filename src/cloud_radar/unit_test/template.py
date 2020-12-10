@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from pathlib import Path
 from typing import Any, Dict, Union
@@ -21,32 +23,37 @@ class Template:
     StackName: str = ""  # Not yet implemented
     URLSuffix: str = "amazonaws.com"  # Other regions not implemented
 
-    def __init__(self, template_path: Union[str, Path]) -> None:
+    def __init__(self, template: Dict[str, Any]) -> None:
         """Loads a Cloudformation template from a file and saves
         it as a dictionary.
 
         Args:
-            template_path (Union[str, Path]): The path to the template.
+            template (Dict): The Cloudformation template as a dictionary.
+
+        Raises:
+            TypeError: If template is not a dictionary.
         """
 
-        template_path = Path(template_path)
+        if not isinstance(template, dict):
+            raise TypeError(f"Template should be dict not {type(template).__name__}.")
+
+        self.raw: str = yaml.dump(template)
+        self.template = template
+        self.Region = Template.Region
+
+    @classmethod
+    def from_yaml(cls, template_path: Union[str, Path]) -> Template:
 
         with open(template_path) as f:
             raw = f.read()
 
-        self.raw: str = raw
-        self.template: dict = self.load()
-        self.Region = Template.Region
+        tmp_yaml = load_yaml(raw)
 
-    def load(self) -> dict:
+        tmp_str = dump_yaml(tmp_yaml)
 
-        template = load_yaml(self.raw)
+        template = yaml.load(tmp_str)
 
-        template = dump_yaml(template)
-
-        template = yaml.load(template)
-
-        return template
+        return cls(template)
 
     def render(
         self, params: Dict[str, str] = None, region: Union[str, None] = None
@@ -66,7 +73,7 @@ class Template:
         if region:
             self.Region = region
 
-        self.template = self.load()
+        self.template = yaml.load(self.raw)
         self.set_parameters(params)
 
         add_metadata(self.template, self.Region)

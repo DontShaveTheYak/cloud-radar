@@ -9,7 +9,7 @@ from cloud_radar.unit_test import Template
 def template():
     template_path = Path(__file__).parent / "../templates/log_bucket/log_bucket.yaml"
 
-    return Template(template_path.resolve())
+    return Template.from_yaml(template_path.resolve())
 
 
 def test_log_defaults(template):

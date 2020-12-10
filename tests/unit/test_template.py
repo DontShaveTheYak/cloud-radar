@@ -16,100 +16,80 @@ from cloud_radar.unit_test.template import (
 
 @pytest.fixture
 def template():
-    template_path = Path(__file__).parent / "./templates/log_bucket/log_bucket.yaml"
-
-    return Template(template_path.resolve())
-
-
-def test_default():
     template_path = Path(__file__).parent / "../templates/log_bucket/log_bucket.yaml"
 
-    template = Template(template_path.resolve())
+    return Template.from_yaml(template_path.resolve())
+
+
+def test_default(template: Template):
 
     assert isinstance(template.raw, str), "Should load a string instance of template"
     assert isinstance(
         template.template, dict
     ), "Should return a dictionary of the template"
+    assert (
+        template.Region == Template.Region
+    ), "Should set the default region from the class."
 
 
 def test_missing_template():
 
-    with pytest.raises(FileNotFoundError):
-        Template("fake.yml")
+    with pytest.raises(TypeError):
+        Template("not a dict")
 
 
-@patch("builtins.open", new_callable=mock_open, read_data="{'test': 'test'}")
-@patch("cloud_radar.unit_test.template.load_yaml")
-@patch("cloud_radar.unit_test.template.dump_yaml")
-@patch("cloud_radar.unit_test.template.yaml")
-def test_load(mock_yaml, mock_dump_yaml, mock_load_yaml, mock_open):
-    template_dict = {"test": "test"}
+@patch("builtins.open", new_callable=mock_open, read_data="{'Foo': 'bar'}")
+def test_from_yaml(mock_open):
+    template_dict = {"Foo": "bar"}
 
-    mock_load_yaml.return_value = template_dict
+    template = Template.from_yaml("fake.yml")
 
-    mock_dump_yaml.return_value = str(template_dict)
-
-    mock_yaml.load.return_value = template_dict
-
-    template = Template("fake.yml")
-
-    assert template.raw == str(
-        template_dict
-    ), "Should load a string version of our template"
+    assert template.raw == "Foo: bar\n", "Should load a string version of our template"
     assert (
         template.template == template_dict
     ), "Should convert string dict to dict object"
 
-    mock_load_yaml.assert_called_once_with(str(template_dict))
-    mock_dump_yaml.assert_called_once_with(template_dict)
-    mock_yaml.load.assert_called_once_with(str(template_dict))
 
-
-@patch("builtins.open", new_callable=mock_open, read_data="{'test': 'test'}")
-@patch.object(Template, "load")
-@patch.object(Template, "set_parameters")
-@patch.object(Template, "resolve_values")
-def test_render_defaults(mock_resolve, mock_params, mock_load, mock_open):
-    params = {"testParam": "Test Value"}
-    region = "us-east-1"
-    template_dict = {"test": "test"}
-
-    mock_load.return_value = template_dict
-
-    template = Template("fake.yml")
-
-    result = template.render(params)
-
-    assert template.Region == region, "Should set a default region"
-
-    mock_load.assert_called()
-    mock_params.assert_called_once_with(params)
-    mock_resolve.assert_called_once_with(template_dict)
-
-    assert result == template_dict, "Should return resolved template."
-
-
-@patch("builtins.open", new_callable=mock_open, read_data="{'test': 'test'}")
-@patch.object(Template, "load")
-@patch.object(Template, "set_parameters")
-@patch.object(Template, "resolve_values")
-def test_render_override(mock_resolve, mock_params, mock_load, mock_open):
-    params = {"testParam": "Test Value"}
-    region = "us-west-1"
-    template_dict = {
-        "Conditions": {"test": False},
-        "Resources": {"test": {"Condition": "test"}, "test2": {}},
+def test_render_true():
+    t = {
+        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
+        "Resources": {"Foo": {"Condition": "Bar"}},
     }
 
-    mock_load.return_value = template_dict
+    template = Template(t)
 
-    template = Template("fake.yml")
+    result = template.render()
 
-    result = template.render(params, region)
+    assert t is not result, "Should not pass back a pointer to the same dict."
 
-    assert template.Region == region, "Should use our passed in region"
+    assert template.Region == Template.Region, "Should set the default region."
 
-    assert result["Resources"] == {"test2": {}}, "Should remove test resource"
+    assert "Foo" in result["Resources"], "Resources should not be empty."
+
+    assert result["Conditions"]["Bar"], "Condition should be true."
+
+    assert result["Metadata"], "Metadata should be set."
+
+
+def test_render_false():
+    params = {"testParam": "Not Test Value"}
+
+    t = {
+        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
+        "Resources": {"Foo": {"Condition": "Bar"}},
+    }
+
+    template = Template(t)
+
+    result = template.render(params, region="us-west-2")
+
+    assert template.Region != Template.Region, "Should not set the default region."
+
+    assert "Foo" not in result["Resources"], "Resources should be empty."
+
+    assert not result["Conditions"]["Bar"], "Condition should be false."
 
 
 def test_ref():
@@ -189,17 +169,13 @@ def test_sub():
     assert result == "us-east-1 bar ${BASH_VAR}", "Should render multiple variables."
 
 
-@patch("builtins.open", new_callable=mock_open, read_data="{'test': 'test'}")
-@patch.object(Template, "load")
-def test_resolve(mock_load, mock_open):
-    template_dict = {
+def test_resolve():
+    t = {
         "Parameters": {"Test": {"Value": "test"}},
         "Conditions": {"test": True},
     }
 
-    mock_load.return_value = template_dict
-
-    template = Template("fake.yml")
+    template = Template(t)
 
     result = template.resolve_values({"Ref": "Test"})
 
@@ -224,14 +200,10 @@ def test_resolve(mock_load, mock_open):
     assert result == "test", "Should return regular strings."
 
 
-@patch("builtins.open", new_callable=mock_open, read_data="{'test': 'test'}")
-@patch.object(Template, "load")
-def test_set_params(mock_load, mock_open):
-    template_dict = {}
+def test_set_params():
+    t = {}
 
-    mock_load.return_value = template_dict
-
-    template = Template("fake.yml")
+    template = Template(t)
 
     template.set_parameters()
 
