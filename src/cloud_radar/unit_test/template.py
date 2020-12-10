@@ -69,6 +69,8 @@ class Template:
         self.template = self.load()
         self.set_parameters(params)
 
+        add_metadata(self.template, self.Region)
+
         self.resolve_values(self.template)
 
         if "Resources" in self.template:
@@ -82,79 +84,6 @@ class Template:
                         continue
 
         return self.template
-
-    def r_if(self, function: list) -> Any:
-        """Solves AWS If intrinsic functions.
-
-        Args:
-            function (list): The condition, true value and false value.
-
-        Returns:
-            Any: The return value could be another intrinsic function, boolean or string.
-        """
-
-        condition = function[0]
-
-        if not isinstance(condition, bool):
-            condition = self.template["Conditions"][condition]
-
-        if condition:
-            resolved = function[1]
-        else:
-            resolved = function[2]
-
-        return resolved
-
-    def r_equals(self, function: list) -> bool:
-        """Solves AWS Equals intrinsic functions.
-
-        Args:
-            function (list): A list with two items to be compared.
-
-        Returns:
-            bool: Returns True if the items are equal and false other wise.
-        """
-
-        return function[0] == function[1]
-
-    def r_sub(self, function: str) -> str:
-        """Solves AWS Sub intrinsic functions.
-
-        Args:
-            function (str): A string with ${} parameters or resources referenced in the template.
-
-        Returns:
-            str: Returns the rendered string.
-        """  # noqa: B950
-
-        def replace_var(m):
-            var = m.group(2)
-
-            return self.r_ref(var)
-
-        reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
-
-        if re.match(reVar, function):
-            return re.sub(reVar, replace_var, function).replace("${!", "${")
-
-        return function.replace("${!", "${")
-
-    def r_ref(self, function: str):
-        """
-        docstring
-        """
-
-        if "AWS::" in function:
-            pseudo = function.replace("AWS::", "")
-            try:
-                return getattr(self, pseudo)
-            except AttributeError:
-                raise Exception(f"Unrecognized AWS Pseduo variable: '{function}'.")
-
-        if function in self.template["Parameters"]:
-            return self.template["Parameters"][function]["Value"]
-        else:
-            return function
 
     def resolve_values(self, data: Any) -> Any:
         """Recurses through a Cloudformation template. Solving all
@@ -171,18 +100,18 @@ class Template:
             for key, value in data.items():
 
                 if key == "Ref":
-                    return self.r_ref(value)
+                    return r_ref(self.template, value)
 
                 value = self.resolve_values(value)
 
                 if key == "Fn::Equals":
-                    return self.r_equals(value)
+                    return r_equals(value)
 
                 if key == "Fn::If":
-                    return self.r_if(value)
+                    return r_if(self.template, value)
 
                 if key == "Fn::Sub":
-                    return self.r_sub(value)
+                    return r_sub(self.template, value)
 
                 data[key] = self.resolve_values(value)
             return data
@@ -221,3 +150,92 @@ class Template:
                 )
 
             t_params[p_name]["Value"] = p_value["Default"]
+
+
+def add_metadata(template: Dict, region: str) -> None:
+
+    metadata = {"Cloud-Radar": {"Region": region}}
+
+    if "Metadata" not in template:
+        template["Metadata"] = {}
+
+    template["Metadata"].update(metadata)
+
+
+def r_equals(function: list) -> bool:
+    """Solves AWS Equals intrinsic functions.
+
+    Args:
+        function (list): A list with two items to be compared.
+
+    Returns:
+        bool: Returns True if the items are equal, else False.
+    """
+
+    return function[0] == function[1]
+
+
+def r_if(template: Dict, function: list) -> Any:
+    """Solves AWS If intrinsic functions.
+
+    Args:
+        function (list): The condition, true value and false value.
+
+    Returns:
+        Any: The return value could be another intrinsic function, boolean or string.
+    """
+
+    condition = function[0]
+
+    if type(condition) is not str:
+        raise Exception(f"AWS Condition should be str not {type(condition).__name__}.")
+
+    condition = template["Conditions"][condition]
+
+    if condition:
+        return function[1]
+
+    return function[2]
+
+
+def r_ref(template: Dict, var_name: str):
+    """
+    docstring
+    """
+
+    if "AWS::" in var_name:
+        pseudo = var_name.replace("AWS::", "")
+
+        if pseudo == "Region":
+            return template["Metadata"]["Cloud-Radar"]["Region"]
+        try:
+            return getattr(Template, pseudo)
+        except AttributeError:
+            raise Exception(f"Unrecognized AWS Pseduo variable: '{var_name}'.")
+
+    if var_name in template["Parameters"]:
+        return template["Parameters"][var_name]["Value"]
+    else:
+        return var_name
+
+
+def r_sub(template: Dict, function: str) -> str:
+    """Solves AWS Sub intrinsic functions.
+
+    Args:
+        function (str): A string with ${} parameters or resources referenced in the template.
+
+    Returns:
+        str: Returns the rendered string.
+    """  # noqa: B950
+
+    def replace_var(m):
+        var = m.group(2)
+        return r_ref(template, var)
+
+    reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
+
+    if re.search(reVar, function):
+        return re.sub(reVar, replace_var, function).replace("${!", "${")
+
+    return function.replace("${!", "${")
