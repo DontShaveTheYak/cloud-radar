@@ -80,15 +80,14 @@ class Template:
 
         self.resolve_values(self.template)
 
-        if "Resources" in self.template:
-            resources = self.template["Resources"]
-            for r_name, r_value in list(resources.items()):
-                if "Condition" in r_value:
-                    condition = self.template["Conditions"][r_value["Condition"]]
+        resources = self.template["Resources"]
+        for r_name, r_value in list(resources.items()):
+            if "Condition" in r_value:
+                condition = self.template["Conditions"][r_value["Condition"]]
 
-                    if not condition:
-                        del self.template["Resources"][r_name]
-                        continue
+                if not condition:
+                    del self.template["Resources"][r_name]
+                    continue
 
         return self.template
 
@@ -160,9 +159,6 @@ class Template:
                 t_params[p_name]["Value"] = parameters[p_name]
                 continue
 
-            if "Value" in p_value:
-                continue
-
             if "Default" not in p_value:
                 raise ValueError(
                     "Must provide values for parameters that don't have a default value."
@@ -225,9 +221,18 @@ def r_if(template: Dict, function: list) -> Any:
     return function[2]
 
 
-def r_ref(template: Dict, var_name: str):
-    """
-    docstring
+def r_ref(template: Dict, var_name: str) -> Union[str, int, float, list]:
+    """Takes the name of a parameter, resource or pseudo variable and finds the value for it.
+
+    Args:
+        template (Dict): The Cloudformation template.
+        var_name (str): The name of the parameter, resource or pseudo variable.
+
+    Raises:
+        ValueError: If the supplied pseudo variable doesn't exist.
+
+    Returns:
+        Union[str, int, float, list]: The value of the parameter, resource or pseudo variable.
     """
 
     if "AWS::" in var_name:
@@ -240,7 +245,7 @@ def r_ref(template: Dict, var_name: str):
         try:
             return getattr(Template, pseudo)
         except AttributeError:
-            raise Exception(f"Unrecognized AWS Pseduo variable: '{var_name}'.")
+            raise ValueError(f"Unrecognized AWS Pseduo variable: '{var_name}'.")
 
     if var_name in template["Parameters"]:
         return template["Parameters"][var_name]["Value"]

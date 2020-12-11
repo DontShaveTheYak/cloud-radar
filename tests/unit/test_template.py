@@ -78,7 +78,12 @@ def test_render_false():
     t = {
         "Parameters": {"testParam": {"Default": "Test Value"}},
         "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
-        "Resources": {"Foo": {"Condition": "Bar"}},
+        "Resources": {
+            "Foo": {"Condition": "Bar"},
+            "Foobar": {
+                "Properties": {"Something": {"Fn::Sub": "This is a ${testParam}"}}
+            },
+        },
     }
 
     template = Template(t)
@@ -115,6 +120,13 @@ def test_ref():
     assert (
         result == "SomeResource"
     ), "If not a psedo var or parameter it should return the input."
+
+    fake = "AWS::FakeVar"
+
+    with pytest.raises(ValueError) as e:
+        r_ref(template, fake)
+
+    assert f"Unrecognized AWS Pseduo variable: '{fake}'." in str(e.value)
 
 
 def test_if():
@@ -246,3 +258,13 @@ def test_set_params():
     assert {"Test": {"Default": "default", "Value": "default"}} == template.template[
         "Parameters"
     ], "Should set default values."
+
+
+@pytest.mark.parametrize("t", [{}, {"Metadata": {}}])
+def test_metadata(t):
+    region = "us-east-1"
+    add_metadata(t, region=region)
+
+    assert "Metadata" in t
+
+    assert region == t["Metadata"]["Cloud-Radar"]["Region"]
