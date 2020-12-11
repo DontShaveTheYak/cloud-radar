@@ -132,28 +132,40 @@ class Template:
         by using the default value of that parameter.
 
         Args:
-            parameters (Union[dict, None ], optional): The parameters names and values. Defaults to None.
+            parameters (Union[Dict[str, str], None], optional): The parameters names and values. Defaults to None.
 
         Raises:
-            Exception: Raises an Exeption if parameter is missing a default and a value is not provided.
+            ValueError: If you supply parameters for a template that doesn't have any.
+            ValueError: If you pass parameters that are not in this template.
+            ValueError: If Template Parameter is missing a default and a value is not provided.
         """  # noqa: B950
 
         if parameters is None:
             parameters = {}
 
         if "Parameters" not in self.template:
+            if parameters:
+                raise ValueError(
+                    "You supplied parameters for a template that doesn't have any."
+                )
             return
 
-        t_params = self.template["Parameters"]
+        t_params: dict = self.template["Parameters"]
+
+        if set(parameters) - set(t_params):
+            raise ValueError("You passed a Parameter that was not in the Template.")
 
         for p_name, p_value in t_params.items():
             if p_name in parameters:
                 t_params[p_name]["Value"] = parameters[p_name]
                 continue
 
+            if "Value" in p_value:
+                continue
+
             if "Default" not in p_value:
-                raise Exception(
-                    "Must provide values for parameters that dont have default"
+                raise ValueError(
+                    "Must provide values for parameters that don't have a default value."
                 )
 
             t_params[p_name]["Value"] = p_value["Default"]

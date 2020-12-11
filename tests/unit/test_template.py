@@ -202,6 +202,7 @@ def test_resolve():
 
 def test_set_params():
     t = {}
+    params = {"Foo": {"Bar"}}
 
     template = Template(t)
 
@@ -209,16 +210,34 @@ def test_set_params():
 
     assert template.template == {}, "Should do nothing if no parameters in template."
 
+    with pytest.raises(ValueError) as e:
+        template.set_parameters(params)
+
+    assert "You supplied parameters for a template that doesn't have any." in str(
+        e.value
+    ), "Should throw correct exception."
+
     template.template = {"Parameters": {"Test": {}}}
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError) as e:
         template.set_parameters()
+
+    assert "Must provide values for parameters that don't have a default value." in str(
+        e.value
+    ), "Should throw correct exception."
 
     template.set_parameters({"Test": "value"})
 
     assert {"Test": {"Value": "value"}} == template.template[
         "Parameters"
     ], "Should set the value to what we pass in."
+
+    with pytest.raises(ValueError) as e:
+        template.set_parameters({"Bar": "Foo"})
+
+    assert "You passed a Parameter that was not in the Template." in str(
+        e.value
+    ), "Should throw correct exception."
 
     template.template = {"Parameters": {"Test": {"Default": "default"}}}
 
