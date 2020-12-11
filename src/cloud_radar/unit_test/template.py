@@ -172,6 +172,14 @@ class Template:
 
 
 def add_metadata(template: Dict, region: str) -> None:
+    """This functions adds the current region to the template
+    as metadate because we can't treat Region like a normal pseduo
+    variables because we don't want to update the class var for every run.
+
+    Args:
+        template (Dict): The template you want to update.
+        region (str): The region that template will be tested with.
+    """
 
     metadata = {"Cloud-Radar": {"Region": region}}
 
@@ -225,6 +233,8 @@ def r_ref(template: Dict, var_name: str):
     if "AWS::" in var_name:
         pseudo = var_name.replace("AWS::", "")
 
+        # Can't treat region like a normal pseduo because
+        # we don't want to update the class var for every run.
         if pseudo == "Region":
             return template["Metadata"]["Cloud-Radar"]["Region"]
         try:
