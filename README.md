@@ -290,3 +290,4 @@ Levi - [@shadycuz_cuz](https://twitter.com/shady_cuz)
 [license-shield]: https://img.shields.io/github/license/DontShaveTheYak/cloud-radar.svg?style=for-the-badge
 [license-url]: https://github.com/DontShaveTheYak/cloud-radar/blob/master/LICENSE.txt
 [product-screenshot]: images/screenshot.png
+debug
