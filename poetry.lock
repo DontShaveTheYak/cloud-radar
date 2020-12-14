@@ -109,6 +109,19 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "cfn-flip"
+version = "1.2.3"
+description = "Convert AWS CloudFormation templates between JSON and YAML formats"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+Click = "*"
+PyYAML = ">=4.1"
+six = "*"
+
+[[package]]
 name = "cfn-lint"
 version = "0.42.0"
 description = "Checks CloudFormation templates for practices and behaviour that could potentially be improved"
@@ -137,7 +150,7 @@ python-versions = "*"
 name = "click"
 version = "7.1.2"
 description = "Composable command line interface toolkit"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -760,7 +773,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "037793de482ec96ae72a70afaa6f03d409041a63b84d07ec14dd55ce18d1e758"
+content-hash = "27cc57c9d7a53a77183c7bed83cf76a2a1a761a8df8e6cbce951f05eb392a22e"
 
 [metadata.files]
 appdirs = [
@@ -798,6 +811,9 @@ botocore = [
 certifi = [
     {file = "certifi-2020.11.8-py2.py3-none-any.whl", hash = "sha256:1f422849db327d534e3d0c5f02a263458c3955ec0aae4ff09b95f195c59f4edd"},
     {file = "certifi-2020.11.8.tar.gz", hash = "sha256:f05def092c44fbf25834a51509ef6e631dc19765ab8a57b4e7ab85531f0a9cf4"},
+]
+cfn-flip = [
+    {file = "cfn_flip-1.2.3.tar.gz", hash = "sha256:2bed32a1f4dca26dc64178d52511fd4ef778b5ccbcf32559cac884ace75bde6a"},
 ]
 cfn-lint = [
     {file = "cfn-lint-0.42.0.tar.gz", hash = "sha256:8cd2987e547f2779257de7e47b09ac7dbd14f788f19dc4892a3f32cc7d08599c"},

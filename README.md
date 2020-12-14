@@ -1,12 +1,3 @@
-<!--
-*** Thanks for checking out the cloud-radar. If you have a suggestion
-*** that would make this better, please fork the repo and create a pull request
-*** or simply open an issue with the tag "enhancement".
-*** Thanks again! Now go create something AMAZING! :D
--->
-
-
-
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -24,8 +15,6 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url] -->
-
-
 
 <!-- PROJECT LOGO -->
 <br />
@@ -78,12 +67,25 @@
   </ol>
 </details>
 
-
-
-<!-- ABOUT THE PROJECT -->
 ## About The Project
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
+
+Cloud-Radar is a python module that allows testing of Cloudformation Templates using Python.
+
+### Unit Testing
+
+You can now unit test the logic contained inside your Cloudformation template. Cloud-Radar takes your template, the desired region and some parameters. We render the template into its final state and pass it back to you.
+
+You can Test:
+* That Conditionals in your template evaluate to the correct behavior.
+* Conditional resources were created or not.
+* That resources have the correct properties.
+* That resources are named as expected because of `!Sub`.
+
+You can test all this locally without worrying about AWS Credentials.
+
+### Functional Testing
 
 This project is a wrapper around Taskcat. Taskcat is a great tool for ensuring your Cloudformation Template can be deployed in multiple AWS Regions. Cloud-Radar enhances Taskcat by making it easier to write more complete functional tests.
 
@@ -92,13 +94,13 @@ Here's How:
 * You can control the lifecycle of the stack. This allows testing if resources were retained after the stacks were deleted.
 * You can dynamically generate taskcat projects, tests and template parameters without hardcoding them in a config file.
 
-This project is new and it's possible not all features or functionality of Taskcat are supported. If you find something missing or have a use case that isn't covered then please let me know =)
+This project is new and it's possible not all features or functionality of Taskcat/Cloudformation are supported (see [Roadmap](#roadmap)). If you find something missing or have a use case that isn't covered then please let me know =)
 
 ### Built With
 
 * [Taskcat](https://github.com/aws-quickstart/taskcat)
+* [cfn_tools from cfn-flip](https://github.com/awslabs/aws-cfn-template-flip)
 
-<!-- GETTING STARTED -->
 ## Getting Started
 
 Cloud-Radar is available as an easy to install pip package.
@@ -114,10 +116,66 @@ Cloud-Radar requires python >= 3.8
    pip install cloud-radar
    ```
 
-<!-- USAGE EXAMPLES -->
 ## Usage
+<details>
+<summary>Unit Testing</summary>
 
-Using Cloud-Radar start by importing it into your test file or framework.
+Using Cloud-Radar starts by importing it into your test file or framework. We will use this [Template](./tests/templates/log_bucket/log_bucket.yaml) as an example.
+
+```python
+from cloud_radar.unit_test import Template
+
+template_path = Path(__file__).parent / "../templates/log_bucket/log_bucket.yaml"
+
+# template_path can be a str or a Path object
+template = Template.from_yaml(template_path.resolve())
+
+params = {"BucketPrefix": "testing", "KeepBucket": "TRUE"}
+
+# parameters and region are optional arguments.
+result = template.render(params, region="us-west-2")
+
+assert "LogsBucket" not in result["Resources"]
+
+bucket = result["Resources"]["RetainLogsBucket"]
+
+assert "DeletionPolicy" in bucket
+
+assert bucket["DeletionPolicy"] == "Retain"
+
+bucket_name = bucket["Properties"]["BucketName"]
+
+assert "us-west-2" in bucket_name
+```
+
+The AWS pseudo variables are all class attributes and can be modified before rendering a template.
+```python
+# The value of 'AWS::AccountId' in !Sub "My AccountId is ${AWS::AccountId}" can be changed:
+Template.AccountId = '8675309'
+```
+_Note: Region should only be changed to change the default value. To change the region during testing pass the desired region to render(region='us-west-2')_
+
+The default values for psedo variables:
+
+| Name             | Default Value   |
+| ---------------- | --------------- |
+| AccountId        | "555555555555"  |
+| NotificationARNs | []              |
+| **NoValue**      | ""              |
+| **Partition**    | "aws"           |
+| Region           | "us-east-1"     |
+| **StackId**      | ""              |
+| **StackName**    | ""              |
+| **URLSuffix**    | "amazonaws.com" |
+_Note: Bold variables are not fully impletmented yet see the [Roadmap](#roadmap)_
+
+A real unit testing example using Pytest can be seen [here](./tests/functional/test_template.py)
+
+</details>
+
+<details>
+<summary>Function Testing</summary>
+Using Cloud-Radar starts by importing it into your test file or framework.
 
 ```python
 from cloud_radar import Test
@@ -223,21 +281,35 @@ Test(test_name: str, project_dir: str, config_input: dict = None, config_file: s
 
 All the properties and methods of a [stack instance](https://github.com/aws-quickstart/taskcat/blob/main/taskcat/_cfn/stack.py#L188).
 
-_For more examples, please refer to how we test [Cloud-Radar](./tests/test_e2e.py)_
+A real functional testing example using Pytest can be seen [here](./tests/functional/test_e2e.py)
 
+</details>
 
-
-<!-- ROADMAP -->
 ## Roadmap
 
+### Project
 - Python 3.7 support
+- Add Logging
+- Add Logo
+- Make it easier to interact with stack resources.
+  * Getting a resource for testing should be as easy as `stack.Resources('MyResource)` or `template.Resources('MyResource')`
+
+### Unit
+- Implement all AWS [intrinsic functions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference.html).
+  * Only `!Ref`, `!Sub`, `!Equals` and `!If` currently supported.
+- Add full functionality to pseudo variables.
+  * Variables like `Partition`, `URLSuffix` should change if the region changes.
+  * Variables like `StackName` and `StackId` should have a better default than ""
+- Handle References to resources that shouldn't exist.
+  * It's currently possible that a `!Ref` to a Resource stays in the final template even if that resource is later removed because of a conditional.
+
+### Functional
 - Add the ability to update a stack instance to Taskcat.
 - Add logging to Cloud-Radar
 - Add logo
 
 See the [open issues](https://github.com/DontShaveTheYak/cloud-radar/issues) for a list of proposed features (and known issues).
 
-<!-- CONTRIBUTING -->
 ## Contributing
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -252,17 +324,13 @@ This project uses poetry to manage dependencies and pre-commit to run formatting
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-
-
-<!-- LICENSE -->
 ## License
 
 Distributed under the Apache-2.0 License. See [LICENSE.txt](./LICENSE.txt) for more information.
 
-<!-- CONTACT -->
 ## Contact
 
-Levi - [@shadycuz_cuz](https://twitter.com/shady_cuz)
+Levi - [@shady_cuz](https://twitter.com/shady_cuz)
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
