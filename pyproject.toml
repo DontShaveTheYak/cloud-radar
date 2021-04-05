@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cloud-radar"
-version = "0.0.0"
+version = "0.0.1-alpha.0"
 description = "Run functional tests on cloudformation stacks."
 readme = "README.md"
 authors = ["Levi Blaney <shadycuz@gmail.com>"]
