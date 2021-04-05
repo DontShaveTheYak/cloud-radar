@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v2.2.1
         with:
           python-version: '3.9'
           architecture: x64
@@ -65,7 +65,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Setup Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v2.2.1
         with:
           python-version: '3.9'
           architecture: x64
