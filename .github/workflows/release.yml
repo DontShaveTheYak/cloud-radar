@@ -42,7 +42,8 @@ jobs:
         id: bump
         run: |
           poetry version ${{ steps.calculate.outputs.base_tag }}
-          NEXT_TAG=$(poetry version -s ${{ steps.calculate.outputs.bump_rule }})
+          poetry version ${{ steps.calculate.outputs.bump_rule }}
+          NEXT_TAG=$(poetry version -s)
           echo "::set-output name=next_tag::$(echo $NEXT_TAG)"
 
       - name: Create Tag
