@@ -51,7 +51,7 @@ class Template:
 
         tmp_str = dump_yaml(tmp_yaml)
 
-        template = yaml.load(tmp_str)
+        template = yaml.load(tmp_str, Loader=yaml.FullLoader)
 
         return cls(template)
 
@@ -73,7 +73,7 @@ class Template:
         if region:
             self.Region = region
 
-        self.template = yaml.load(self.raw)
+        self.template = yaml.load(self.raw, Loader=yaml.FullLoader)
         self.set_parameters(params)
 
         add_metadata(self.template, self.Region)
