@@ -2,16 +2,16 @@ version: 2
 updates:
   - package-ecosystem: "pip"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "daily"
     labels:
-      - "patch"
       - "chore"
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "daily"
     labels:
-      - "patch"
       - "chore"
