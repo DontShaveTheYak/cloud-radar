@@ -26,7 +26,7 @@
   <h3 align="center">Cloud-Radar</h3>
 
   <p align="center">
-    Write functional tests for multi-region Cloudformation stacks.
+    Write unit and functional tests for AWS Cloudformation.
     <!-- <br />
     <a href="https://github.com/DontShaveTheYak/cloud-radar"><strong>Explore the docs »</strong></a>
     <br /> -->
@@ -71,14 +71,14 @@
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Cloud-Radar is a python module that allows testing of Cloudformation Templates using Python.
+Cloud-Radar is a python module that allows testing of Cloudformation Templates/Stacks using Python.
 
 ### Unit Testing
 
 You can now unit test the logic contained inside your Cloudformation template. Cloud-Radar takes your template, the desired region and some parameters. We render the template into its final state and pass it back to you.
 
 You can Test:
-* That Conditionals in your template evaluate to the correct behavior.
+* That Conditionals in your template evaluate to the correct value.
 * Conditional resources were created or not.
 * That resources have the correct properties.
 * That resources are named as expected because of `!Sub`.
@@ -92,7 +92,7 @@ This project is a wrapper around Taskcat. Taskcat is a great tool for ensuring y
 Here's How:
 * You can interact with the deployed resources directly with tools you already know like boto3.
 * You can control the lifecycle of the stack. This allows testing if resources were retained after the stacks were deleted.
-* You can dynamically generate taskcat projects, tests and template parameters without hardcoding them in a config file.
+* You can run tests without hardcoding them in a taskcat config file.
 
 This project is new and it's possible not all features or functionality of Taskcat/Cloudformation are supported (see [Roadmap](#roadmap)). If you find something missing or have a use case that isn't covered then please let me know =)
 
@@ -123,9 +123,10 @@ Cloud-Radar requires python >= 3.8
 Using Cloud-Radar starts by importing it into your test file or framework. We will use this [Template](./tests/templates/log_bucket/log_bucket.yaml) as an example.
 
 ```python
-from cloud_radar.unit_test import Template
+from pathlib import Path
+from cloud_radar.cf.unit import Template
 
-template_path = Path(__file__).parent / "../templates/log_bucket/log_bucket.yaml"
+template_path = Path("tests/templates/log_bucket/log_bucket.yaml")
 
 # template_path can be a str or a Path object
 template = Template.from_yaml(template_path.resolve())
@@ -169,23 +170,28 @@ The default values for psedo variables:
 | **URLSuffix**    | "amazonaws.com" |
 _Note: Bold variables are not fully impletmented yet see the [Roadmap](#roadmap)_
 
-A real unit testing example using Pytest can be seen [here](./tests/functional/test_template.py)
+A real unit testing example using Pytest can be seen [here](./tests/test_cf/test_unit/test_template.py)
 
 </details>
 
 <details>
-<summary>Function Testing</summary>
+<summary>Functional Testing</summary>
 Using Cloud-Radar starts by importing it into your test file or framework.
 
 ```python
-from cloud_radar import Test
+from pathlib import Path
 
-# Test is a context manager that makes sure your stacks are deleted after testing.
+from cloud_radar.cf.e2e import Stack
 
-# test-name is the name of your test from your taskcat project file.
-# ./project_dir is the path to the folder that contains your Cloudformation template
-# and taskcat config file.
-with Test('test-name', './project_dir') as stacks:
+# Stack is a context manager that makes sure your stacks are deleted after testing.
+template_path = Path("tests/templates/log_bucket/log_bucket.yaml")
+params = {"BucketPrefix": "testing", "KeepBucket": "False"}
+regions = ['us-west-2']
+
+# template_path can be a string or a Path object.
+# params can be optional if all your template params have default values
+# regions can be optional, default region is 'us-east-1'
+with Stack(template_path, params, regions) as stacks:
     # Stacks will be created and returned as a list in the stacks variable.
 
     for stack in stacks:
@@ -208,80 +214,46 @@ with Test('test-name', './project_dir') as stacks:
 
         print(f"Created bucket: {bucket_name}")
 
-# Once the test is over then all resources will be cleaned up.
+# Once the test is over then all resources will be deleted from your AWS account.
 ```
 
-You can also supply a Taskcat config as a python dictionary.
+You can use taskcat [tokens](https://aws.amazon.com/blogs/infrastructure-and-automation/a-deep-dive-into-testing-with-taskcat/) in your parameter values.
 
 ```python
-config = {
-    "project": {
-        "name": "taskcat-test-logbucket",
-        "regions": ["us-west-1", "us-west-2"],
-    },
-    "tests": {
-        "log-bucket": {
-            "template": "./log_bucket.yaml",
-            "parameters": {
-                "BucketPrefix": "taskcat-$[taskcat_random-string]",
-                "KeepBucket": "FALSE",
-            },
-        }
-    },
+parameters = {
+  "BucketPrefix": "taskcat-$[taskcat_random-string]",
+  "KeepBucket": "FALSE",
 }
-
-with Test('log-bucket', './project_dir', config_input=config) as stacks:
-    for stack in stacks:
-      assert 'us-east' not in stack.region.name
 ```
 
-You can also skip the context manager. Here is an example for `unittest`
+You can skip the context manager. Here is an example for `unittest`
 
 ```python
 import unittest
 
-from cloud-radar import TestManager
+from cloud-radar.cf.e2e import Stack
 
-class Test(unittest.TestCase):
+class TestLogBucket(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tm = TestManager('test-name','./project_dir')
-        cls.tm.create()
+        template_path = Path("tests/templates/log_bucket/log_bucket.yaml")
+        cls.test = Stack(template_path)
+        cls.test.create()
 
     @classmethod
     def tearDownClass(cls):
-        cls.tm.delete()
+        cls.test.delete()
 
     def test_bucket(self):
-        stacks = self.__class__.tm.stacks
+        stacks = self.__class__.test.stacks
 
         for stack in stacks:
             # Test
 ```
 
-Calling `help(cloud-radar.Test)`
-
-```
-Test(test_name: str, project_dir: str, config_input: dict = None, config_file: str = './.taskcat.yml', regions: str = 'ALL', wait_for_delete: bool = False) -> Iterator[taskcat._cfn.stack.Stacks]
-    Create Stacks for a Taskcat test and return the stacks.
-
-    Must pass in a Taskcat configuration as either a dictionary or file.
-
-    Args:
-        test_name (str): The name of the test from the Taskcat config file.
-        project_dir (str): The directory that contains your Taskcat config and cloudformation files.
-        config_input (dict, optional): Taskcat config file in the form of a dictionary. Defaults to None.
-        config_file (str, optional): The name of the Taskcat config file. Defaults to "./.taskcat.yml".
-        regions (str, optional): Overide the regions defined in the config file. Defaults to "ALL".
-        wait_for_delete (bool, optional): Wait until stacks have deleted. Defaults to False.
-
-    Yields:
-        Iterator[Stacks]: The stacks created for the tests.
-```
-
 All the properties and methods of a [stack instance](https://github.com/aws-quickstart/taskcat/blob/main/taskcat/_cfn/stack.py#L188).
 
-A real functional testing example using Pytest can be seen [here](./tests/functional/test_e2e.py)
+A real functional testing example using Pytest can be seen [here](./tests/test_cf/test_e2e/test_stack.py)
 
 </details>
 
@@ -293,6 +265,7 @@ A real functional testing example using Pytest can be seen [here](./tests/functi
 - Add Logo
 - Make it easier to interact with stack resources.
   * Getting a resource for testing should be as easy as `stack.Resources('MyResource)` or `template.Resources('MyResource')`
+- Easier to pick regions for testing
 
 ### Unit
 - Implement all AWS [intrinsic functions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference.html).
@@ -305,8 +278,6 @@ A real functional testing example using Pytest can be seen [here](./tests/functi
 
 ### Functional
 - Add the ability to update a stack instance to Taskcat.
-- Add logging to Cloud-Radar
-- Add logo
 
 See the [open issues](https://github.com/DontShaveTheYak/cloud-radar/issues) for a list of proposed features (and known issues).
 
