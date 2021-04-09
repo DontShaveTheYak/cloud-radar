@@ -41,10 +41,17 @@ jobs:
       - name: Bump version
         id: bump
         run: |
-          poetry version ${{ steps.calculate.outputs.base_tag }}
-          poetry version ${{ steps.calculate.outputs.bump_rule }}
-          NEXT_TAG=$(poetry version -s)
-          echo "::set-output name=next_tag::$(echo $NEXT_TAG)"
+          if [ "$BUMP_RULE" = "None" ]; then
+              echo "::set-output name=next_tag::$(echo $BASE_TAG)"
+          else
+              poetry version $BASE_TAG
+              poetry version $BUMP_RULE
+              NEXT_TAG=$(poetry version -s)
+              echo "::set-output name=next_tag::$(echo $NEXT_TAG)"
+          fi
+        env:
+          BASE_TAG: ${{ steps.calculate.outputs.base_tag }}
+          BUMP_RULE: ${{ steps.calculate.outputs.bump_rule }}
 
       - name: Create Tag
         id: create_tag
