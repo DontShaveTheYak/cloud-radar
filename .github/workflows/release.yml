@@ -8,7 +8,7 @@ jobs:
   tag:
     name: Create Tag
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged && github.base_ref == 'develop' || github.base_ref == 'master'
+    if: github.event.pull_request.merged && (github.base_ref == 'develop' || github.base_ref == 'master')
     outputs:
       tag: ${{ steps.bump.outputs.next_tag }}
     steps:
