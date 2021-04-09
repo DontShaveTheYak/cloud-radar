@@ -24,7 +24,9 @@ jobs:
           architecture: x64
 
       - name: Setup Poetry
-        run: pip install poetry==1.1.4
+        run: |
+          pip install poetry==1.1.4
+          poetry install
 
       - name: Setup Coverage
         run: pip install coverage[toml]
