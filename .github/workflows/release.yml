@@ -8,18 +8,18 @@ jobs:
   tag:
     name: Create Tag
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged && github.base_ref == 'develop' || github.base_ref == 'master'
+    if: github.event.pull_request.merged && (github.base_ref == 'develop' || github.base_ref == 'master')
     outputs:
       tag: ${{ steps.bump.outputs.next_tag }}
     steps:
 
       - name: Checkout Code
-        uses: actions/checkout@v2.2.0
+        uses: actions/checkout@v2.3.4
         with:
           fetch-depth: 0
 
       - name: Setup Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v2.2.1
         with:
           python-version: '3.9'
           architecture: x64
@@ -41,10 +41,17 @@ jobs:
       - name: Bump version
         id: bump
         run: |
-          poetry version ${{ steps.calculate.outputs.base_tag }}
-          poetry version ${{ steps.calculate.outputs.bump_rule }}
-          NEXT_TAG=$(poetry version -s)
-          echo "::set-output name=next_tag::$(echo $NEXT_TAG)"
+          if [ "$BUMP_RULE" = "None" ]; then
+              echo "::set-output name=next_tag::$(echo $BASE_TAG)"
+          else
+              poetry version $BASE_TAG
+              poetry version $BUMP_RULE
+              NEXT_TAG=$(poetry version -s)
+              echo "::set-output name=next_tag::$(echo $NEXT_TAG)"
+          fi
+        env:
+          BASE_TAG: ${{ steps.calculate.outputs.base_tag }}
+          BUMP_RULE: ${{ steps.calculate.outputs.bump_rule }}
 
       - name: Create Tag
         id: create_tag
@@ -62,10 +69,10 @@ jobs:
     needs: tag
     steps:
       - name: Checkout Code
-        uses: actions/checkout@master
+        uses: actions/checkout@v2.3.4
 
       - name: Setup Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v2.2.1
         with:
           python-version: '3.9'
           architecture: x64
@@ -94,7 +101,7 @@ jobs:
     needs: [tag, publish]
     steps:
       - name: Create Draft Release
-        uses: release-drafter/release-drafter@v5.14.0
+        uses: release-drafter/release-drafter@v5.15.0
         if: github.base_ref == 'develop'
         with:
           tag: ${{needs.tag.outputs.tag}}
@@ -103,7 +110,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: release-drafter/release-drafter@v5.14.0
+        uses: release-drafter/release-drafter@v5.15.0
         if: github.base_ref == 'master'
         with:
           tag: ${{needs.tag.outputs.tag}}
