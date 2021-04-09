@@ -49,11 +49,12 @@ latest_tag = sys.argv[1]
 pull_request = sys.argv[2]
 branch = sys.argv[3]
 
-action_name = get_action(pull_request)
 
 action_methods = {"patch": "bump_patch", "minor": "bump_minor", "major": "bump_major"}
 
-action = action_methods[action_name]
+if branch != "master":
+    action_name = get_action(pull_request)
+    action = action_methods[action_name]
 
 base_tag: str = ""
 bump_rule: str = ""
@@ -66,9 +67,9 @@ release_tag = str(semver.VersionInfo.parse(response["tag_name"]))
 print(f"Latest release is {release_tag}")
 
 if branch == "master":
-    print("This is a final release!")
-    base_tag = release_tag
-    bump_rule = action_name
+    print("This release is a final release!")
+    base_tag = latest_tag.split("-")[0]
+    bump_rule = "None"
 
 elif "-alpha" in latest_tag:
     print("This is an existing prerelease.")
