@@ -48,12 +48,12 @@ def if_(template: Dict, function: list) -> Any:
     return function[2]
 
 
-def ref(template: "Template", vaname: str) -> Union[str, int, float, list]:
+def ref(template: "Template", var_name: str) -> Union[str, int, float, list]:
     """Takes the name of a parameter, resource or pseudo variable and finds the value for it.
 
     Args:
         template (Dict): The Cloudformation template.
-        vaname (str): The name of the parameter, resource or pseudo variable.
+        var_name (str): The name of the parameter, resource or pseudo variable.
 
     Raises:
         ValueError: If the supplied pseudo variable doesn't exist.
@@ -62,8 +62,8 @@ def ref(template: "Template", vaname: str) -> Union[str, int, float, list]:
         Union[str, int, float, list]: The value of the parameter, resource or pseudo variable.
     """
 
-    if "AWS::" in vaname:
-        pseudo = vaname.replace("AWS::", "")
+    if "AWS::" in var_name:
+        pseudo = var_name.replace("AWS::", "")
 
         # Can't treat region like a normal pseduo because
         # we don't want to update the class var for every run.
@@ -72,12 +72,12 @@ def ref(template: "Template", vaname: str) -> Union[str, int, float, list]:
         try:
             return getattr(template, pseudo)
         except AttributeError:
-            raise ValueError(f"Unrecognized AWS Pseduo variable: '{vaname}'.")
+            raise ValueError(f"Unrecognized AWS Pseduo variable: '{var_name}'.")
 
-    if vaname in template.template["Parameters"]:
-        return template.template["Parameters"][vaname]["Value"]
+    if var_name in template.template["Parameters"]:
+        return template.template["Parameters"][var_name]["Value"]
     else:
-        return vaname
+        return var_name
 
 
 def sub(template: "Template", function: str) -> str:
