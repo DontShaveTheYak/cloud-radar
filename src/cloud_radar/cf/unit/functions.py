@@ -4,12 +4,25 @@ This module contains the logic to solve both AWS Intrinsic
 and Condition functions.
 """
 
+import base64 as b64
 import re
 from typing import Any, Dict, List, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
     from ._template import Template
+
+
+def base64(value: Any) -> str:
+
+    if not isinstance(value, str):
+        raise Exception(
+            f"The value for !Base64 or Fn::Base64 must be a String, not {type(value).__name__}."
+        )
+
+    b_string = b64.b64encode(value.encode("ascii"))
+
+    return b_string.decode("ascii")
 
 
 def equals(function: list) -> bool:
@@ -38,7 +51,7 @@ def if_(template: Dict, function: list) -> Any:
     condition = function[0]
 
     if type(condition) is not str:
-        raise Exception(f"AWS Condition should be str not {type(condition).__name__}.")
+        raise Exception(f"AWS Condition should be str, not {type(condition).__name__}.")
 
     condition = template["Conditions"][condition]
 

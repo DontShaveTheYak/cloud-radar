@@ -6,6 +6,23 @@ from cloud_radar.cf.unit import functions
 from cloud_radar.cf.unit._template import Template, add_metadata
 
 
+def test_base64():
+    value = 1
+
+    with pytest.raises(Exception) as e:
+        result = functions.base64(value)
+
+    assert "The value for !Base64 or Fn::Base64 must be a String, not int." in str(
+        e.value
+    )
+
+    value = "TestString"
+
+    result = functions.base64(value)
+
+    assert result == "VGVzdFN0cmluZw=="
+
+
 def test_ref():
 
     template = {"Parameters": {"foo": {"Value": "bar"}}}
