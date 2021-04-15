@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Callable, Dict, Union
 
 from cfn_tools import dump_yaml, load_yaml  # type: ignore
 
 import yaml
 
 from . import functions
+
+IntrinsicFunc = Callable[["Template", Any], Any]
 
 
 class Template:
@@ -103,6 +105,16 @@ class Template:
             Any: Return the rendered data structure.
         """
 
+        aws_functions: Dict[str, IntrinsicFunc] = {
+            "Ref": functions.ref,
+            "Fn::Equals": functions.equals,
+            "Fn::If": functions.if_,
+            "Fn::Sub": functions.sub,
+            "Fn::Join": functions.join,
+            "Fn::Base64": functions.base64,
+            "Fn::Cidr": functions.cidr,
+        }
+
         if isinstance(data, dict):
             for key, value in data.items():
 
@@ -111,23 +123,8 @@ class Template:
 
                 value = self.resolve_values(value)
 
-                if key == "Fn::Equals":
-                    return functions.equals(value)
-
-                if key == "Fn::If":
-                    return functions.if_(self.template, value)
-
-                if key == "Fn::Sub":
-                    return functions.sub(self, value)
-
-                if key == "Fn::Join":
-                    return functions.join(value)
-
-                # if key == "Fn::Base64":
-                #     return functions.base64(value)
-
-                # if key == "Fn::Cidr":
-                #     return functions.cidr(value)
+                if key in aws_functions:
+                    return aws_functions[key](self, value)
 
                 data[key] = self.resolve_values(value)
             return data

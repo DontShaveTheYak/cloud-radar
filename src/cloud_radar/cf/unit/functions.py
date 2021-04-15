@@ -7,14 +7,14 @@ and Condition functions.
 import base64 as b64
 import ipaddress
 import re
-from typing import Any, Dict, List, TYPE_CHECKING, Union
+from typing import Any, List, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
     from ._template import Template
 
 
-def base64(value: Any) -> str:
+def base64(_t: "Template", value: Any) -> str:
 
     if not isinstance(value, str):
         raise Exception(
@@ -26,7 +26,7 @@ def base64(value: Any) -> str:
     return b_string.decode("ascii")
 
 
-def cidr(value: Any) -> List[str]:
+def cidr(_t: "Template", value: Any) -> List[str]:
 
     if not isinstance(value, list):
         raise Exception(
@@ -59,7 +59,7 @@ def cidr(value: Any) -> List[str]:
         )
 
 
-def equals(function: list) -> bool:
+def equals(_t: "Template", function: list) -> bool:
     """Solves AWS Equals intrinsic functions.
 
     Args:
@@ -72,7 +72,7 @@ def equals(function: list) -> bool:
     return function[0] == function[1]
 
 
-def if_(template: Dict, function: list) -> Any:
+def if_(template: "Template", function: list) -> Any:
     """Solves AWS If intrinsic functions.
 
     Args:
@@ -87,7 +87,7 @@ def if_(template: Dict, function: list) -> Any:
     if type(condition) is not str:
         raise Exception(f"AWS Condition should be str, not {type(condition).__name__}.")
 
-    condition = template["Conditions"][condition]
+    condition = template.template["Conditions"][condition]
 
     if condition:
         return function[1]
@@ -95,7 +95,7 @@ def if_(template: Dict, function: list) -> Any:
     return function[2]
 
 
-def join(value: Any) -> str:
+def join(_t: "Template", value: Any) -> str:
 
     delimiter: str
     items: List[str]

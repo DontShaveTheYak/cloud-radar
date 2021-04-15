@@ -6,11 +6,16 @@ from cloud_radar.cf.unit import functions
 from cloud_radar.cf.unit._template import Template, add_metadata
 
 
-def test_base64():
+@pytest.fixture(scope="session")
+def fake_t() -> Template:
+    return Template({})
+
+
+def test_base64(fake_t: Template):
     value = 1
 
     with pytest.raises(Exception) as e:
-        result = functions.base64(value)
+        result = functions.base64(fake_t, value)
 
     assert "The value for !Base64 or Fn::Base64 must be a String, not int." in str(
         e.value
@@ -18,20 +23,20 @@ def test_base64():
 
     value = "TestString"
 
-    result = functions.base64(value)
+    result = functions.base64(fake_t, value)
 
     assert result == "VGVzdFN0cmluZw=="
 
 
-def test_cidr():
+def test_cidr(fake_t: Template):
 
     with pytest.raises(Exception) as e:
-        result = functions.cidr({})
+        result = functions.cidr(fake_t, {})
 
     assert "must be a List, not" in str(e)
 
     with pytest.raises(Exception) as e:
-        result = functions.cidr([1])
+        result = functions.cidr(fake_t, [1])
 
     assert "a ipBlock, the count of subnets and the cidrBits." in str(e)
 
@@ -46,13 +51,13 @@ def test_cidr():
         "192.168.0.160/27",
     ]
 
-    result = functions.cidr(value)
+    result = functions.cidr(fake_t, value)
 
     assert result == expected
 
     value[1] = 9
     with pytest.raises(Exception) as e:
-        result = functions.cidr(value)
+        result = functions.cidr(fake_t, value)
 
     assert "unable to convert" in str(e)
 
@@ -91,51 +96,53 @@ def test_ref():
     assert f"Unrecognized AWS Pseduo variable: '{fake}'." in str(e.value)
 
 
-def test_if():
+def test_if(fake_t: Template):
 
     template = {"Conditions": {"test": False}}
 
-    result = functions.if_(template, ["test", "true_value", "false_value"])
+    fake_t.template = template
+
+    result = functions.if_(fake_t, ["test", "true_value", "false_value"])
 
     assert result == "false_value", "Should return the false value."
 
     template["Conditions"]["test"] = True
 
-    result = functions.if_(template, ["test", "true_value", "false_value"])
+    result = functions.if_(fake_t, ["test", "true_value", "false_value"])
 
     assert result == "true_value", "Should return the true value."
 
     with pytest.raises(Exception):
         # First value should the name of the condition to lookup
-        functions.if_(template, [True, "True", "False"])
+        functions.if_(fake_t, [True, "True", "False"])
 
 
-def test_join():
+def test_join(fake_t: Template):
 
     value = [":", ["a", "b", "c"]]
 
-    result = functions.join(value)
+    result = functions.join(fake_t, value)
 
     assert result == "a:b:c"
 
     value = {}
 
     with pytest.raises(Exception) as e:
-        result = functions.join(value)
+        result = functions.join(fake_t, value)
 
     assert "must be list not dict" in str(e.value)
 
     value = ["a", "b", "c"]
 
     with pytest.raises(Exception) as e:
-        result = functions.join(value)
+        result = functions.join(fake_t, value)
 
     assert "must contain a delimiter and a list of items to join." in str(e.value)
 
     value = [1, {}]
 
     with pytest.raises(Exception) as e:
-        result = functions.join(value)
+        result = functions.join(fake_t, value)
 
     assert (
         "The first value for !Join or Fn::Join must be a String and the second a List."
@@ -143,7 +150,7 @@ def test_join():
     )
 
 
-def test_equals():
+def test_equals(fake_t: Template):
     # AWS is not very clear on what is valid here?
     # > A value of any type that you want to compare.
 
@@ -153,10 +160,12 @@ def test_equals():
     for idx, true in enumerate(true_lst):
         false = false_lst[idx]
 
-        assert functions.equals([true, true]), f"Should compare {type(true)} as True."
+        assert functions.equals(
+            fake_t, [true, true]
+        ), f"Should compare {type(true)} as True."
 
         assert not functions.equals(
-            [true, false]
+            fake_t, [true, false]
         ), f"Should compare {type(true)} as False."
 
 
