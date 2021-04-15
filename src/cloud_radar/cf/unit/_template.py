@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any, Dict, Union
 
 from cfn_tools import dump_yaml, load_yaml  # type: ignore
 
 import yaml
+
+from . import functions
 
 
 class Template:
@@ -106,18 +107,18 @@ class Template:
             for key, value in data.items():
 
                 if key == "Ref":
-                    return r_ref(self.template, value)
+                    return functions.ref(self, value)
 
                 value = self.resolve_values(value)
 
                 if key == "Fn::Equals":
-                    return r_equals(value)
+                    return functions.equals(value)
 
                 if key == "Fn::If":
-                    return r_if(self.template, value)
+                    return functions.if_(self.template, value)
 
                 if key == "Fn::Sub":
-                    return r_sub(self.template, value)
+                    return functions.sub(self, value)
 
                 data[key] = self.resolve_values(value)
             return data
@@ -183,93 +184,3 @@ def add_metadata(template: Dict, region: str) -> None:
         template["Metadata"] = {}
 
     template["Metadata"].update(metadata)
-
-
-def r_equals(function: list) -> bool:
-    """Solves AWS Equals intrinsic functions.
-
-    Args:
-        function (list): A list with two items to be compared.
-
-    Returns:
-        bool: Returns True if the items are equal, else False.
-    """
-
-    return function[0] == function[1]
-
-
-def r_if(template: Dict, function: list) -> Any:
-    """Solves AWS If intrinsic functions.
-
-    Args:
-        function (list): The condition, true value and false value.
-
-    Returns:
-        Any: The return value could be another intrinsic function, boolean or string.
-    """
-
-    condition = function[0]
-
-    if type(condition) is not str:
-        raise Exception(f"AWS Condition should be str not {type(condition).__name__}.")
-
-    condition = template["Conditions"][condition]
-
-    if condition:
-        return function[1]
-
-    return function[2]
-
-
-def r_ref(template: Dict, var_name: str) -> Union[str, int, float, list]:
-    """Takes the name of a parameter, resource or pseudo variable and finds the value for it.
-
-    Args:
-        template (Dict): The Cloudformation template.
-        var_name (str): The name of the parameter, resource or pseudo variable.
-
-    Raises:
-        ValueError: If the supplied pseudo variable doesn't exist.
-
-    Returns:
-        Union[str, int, float, list]: The value of the parameter, resource or pseudo variable.
-    """
-
-    if "AWS::" in var_name:
-        pseudo = var_name.replace("AWS::", "")
-
-        # Can't treat region like a normal pseduo because
-        # we don't want to update the class var for every run.
-        if pseudo == "Region":
-            return template["Metadata"]["Cloud-Radar"]["Region"]
-        try:
-            return getattr(Template, pseudo)
-        except AttributeError:
-            raise ValueError(f"Unrecognized AWS Pseduo variable: '{var_name}'.")
-
-    if var_name in template["Parameters"]:
-        return template["Parameters"][var_name]["Value"]
-    else:
-        return var_name
-
-
-def r_sub(template: Dict, function: str) -> str:
-    """Solves AWS Sub intrinsic functions.
-
-    Args:
-        function (str): A string with ${} parameters or resources referenced in the template.
-
-    Returns:
-        str: Returns the rendered string.
-    """  # noqa: B950
-
-    def replace_var(m):
-        var = m.group(2)
-        return r_ref(template, var)
-
-    reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
-
-    if re.search(reVar, function):
-        return re.sub(reVar, replace_var, function).replace("${!", "${")
-
-    return function.replace("${!", "${")
