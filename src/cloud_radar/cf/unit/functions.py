@@ -5,7 +5,7 @@ and Condition functions.
 """
 
 import re
-from typing import Any, Dict, TYPE_CHECKING, Union
+from typing import Any, Dict, List, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
@@ -46,6 +46,35 @@ def if_(template: Dict, function: list) -> Any:
         return function[1]
 
     return function[2]
+
+
+def join(value: Any) -> str:
+
+    delimiter: str
+    items: List[str]
+
+    if not isinstance(value, list):
+        raise Exception(
+            f"The value for !Join or Fn::Join must be list not {type(value).__name__}."
+        )
+
+    if not len(value) == 2:
+        raise Exception(
+            (
+                "The value for !Join or Fn::Join must contain "
+                "a delimiter and a list of items to join."
+            )
+        )
+
+    if isinstance(value[0], str) and isinstance(value[1], list):
+        delimiter = value[0]
+        items = value[1]
+    else:
+        raise Exception(
+            "The first value for !Join or Fn::Join must be a String and the second a List."
+        )
+
+    return delimiter.join(items)
 
 
 def ref(template: "Template", var_name: str) -> Union[str, int, float, list]:

@@ -120,6 +120,9 @@ class Template:
                 if key == "Fn::Sub":
                     return functions.sub(self, value)
 
+                if key == "Fn::Join":
+                    return functions.join(value)
+
                 data[key] = self.resolve_values(value)
             return data
         elif isinstance(data, list):

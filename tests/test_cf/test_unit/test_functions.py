@@ -54,9 +54,42 @@ def test_if():
 
     assert result == "true_value", "Should return the true value."
 
-    with pytest.raises((Exception)):
+    with pytest.raises(Exception):
         # First value should the name of the condition to lookup
         functions.if_(template, [True, "True", "False"])
+
+
+def test_join():
+
+    value = [":", ["a", "b", "c"]]
+
+    result = functions.join(value)
+
+    assert result == "a:b:c"
+
+    value = {}
+
+    with pytest.raises(Exception) as e:
+        result = functions.join(value)
+
+    assert "must be list not dict" in str(e.value)
+
+    value = ["a", "b", "c"]
+
+    with pytest.raises(Exception) as e:
+        result = functions.join(value)
+
+    assert "must contain a delimiter and a list of items to join." in str(e.value)
+
+    value = [1, {}]
+
+    with pytest.raises(Exception) as e:
+        result = functions.join(value)
+
+    assert (
+        "The first value for !Join or Fn::Join must be a String and the second a List."
+        in str(e.value)
+    )
 
 
 def test_equals():
