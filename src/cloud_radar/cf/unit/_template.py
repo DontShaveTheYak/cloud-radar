@@ -123,6 +123,12 @@ class Template:
                 if key == "Fn::Join":
                     return functions.join(value)
 
+                # if key == "Fn::Base64":
+                #     return functions.base64(value)
+
+                # if key == "Fn::Cidr":
+                #     return functions.cidr(value)
+
                 data[key] = self.resolve_values(value)
             return data
         elif isinstance(data, list):

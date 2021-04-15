@@ -23,6 +23,40 @@ def test_base64():
     assert result == "VGVzdFN0cmluZw=="
 
 
+def test_cidr():
+
+    with pytest.raises(Exception) as e:
+        result = functions.cidr({})
+
+    assert "must be a List, not" in str(e)
+
+    with pytest.raises(Exception) as e:
+        result = functions.cidr([1])
+
+    assert "a ipBlock, the count of subnets and the cidrBits." in str(e)
+
+    value = ["192.168.0.0/24", 6, 5]
+
+    expected = [
+        "192.168.0.0/27",
+        "192.168.0.32/27",
+        "192.168.0.64/27",
+        "192.168.0.96/27",
+        "192.168.0.128/27",
+        "192.168.0.160/27",
+    ]
+
+    result = functions.cidr(value)
+
+    assert result == expected
+
+    value[1] = 9
+    with pytest.raises(Exception) as e:
+        result = functions.cidr(value)
+
+    assert "unable to convert" in str(e)
+
+
 def test_ref():
 
     template = {"Parameters": {"foo": {"Value": "bar"}}}

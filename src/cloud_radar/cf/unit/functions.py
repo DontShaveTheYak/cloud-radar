@@ -5,6 +5,7 @@ and Condition functions.
 """
 
 import base64 as b64
+import ipaddress
 import re
 from typing import Any, Dict, List, TYPE_CHECKING, Union
 
@@ -23,6 +24,39 @@ def base64(value: Any) -> str:
     b_string = b64.b64encode(value.encode("ascii"))
 
     return b_string.decode("ascii")
+
+
+def cidr(value: Any) -> List[str]:
+
+    if not isinstance(value, list):
+        raise Exception(
+            f"The value for !Cidr or Fn::Cidr must be a List, not {type(value).__name__}."
+        )
+
+    if not len(value) == 3:
+        raise Exception(
+            (
+                "The value for !Cidr or Fn::Cidr must contain "
+                "a ipBlock, the count of subnets and the cidrBits."
+            )
+        )
+
+    ip_block: str = value[0]
+    count = int(value[1])
+    hostBits = int(value[2])
+
+    mask = 32 - hostBits
+
+    network = ipaddress.IPv4Network(ip_block, strict=True)
+
+    subnets = network.subnets(new_prefix=mask)
+
+    try:
+        return [next(subnets).exploded for _ in range(count)]
+    except Exception:
+        raise Exception(
+            f"!Cidr or Fn::Cidr unable to convert {ip_block} into {count} subnets of /{mask}"
+        )
 
 
 def equals(function: list) -> bool:
