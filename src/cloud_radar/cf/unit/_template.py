@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from cfn_tools import dump_yaml, load_yaml  # type: ignore
 
@@ -26,7 +26,9 @@ class Template:
     StackName: str = ""  # Not yet implemented
     URLSuffix: str = "amazonaws.com"  # Other regions not implemented
 
-    def __init__(self, template: Dict[str, Any]) -> None:
+    def __init__(
+        self, template: Dict[str, Any], imports: Optional[Dict[str, str]] = None
+    ) -> None:
         """Loads a Cloudformation template from a file and saves
         it as a dictionary.
 
@@ -35,14 +37,22 @@ class Template:
 
         Raises:
             TypeError: If template is not a dictionary.
+            TypeError: If imports is not a dictionary.
         """
+
+        if imports is None:
+            imports = {}
 
         if not isinstance(template, dict):
             raise TypeError(f"Template should be dict not {type(template).__name__}.")
 
+        if not isinstance(imports, dict):
+            raise TypeError(f"Imports should be dict not {type(imports).__name__}.")
+
         self.raw: str = yaml.dump(template)
         self.template = template
         self.Region = Template.Region
+        self.imports = imports
 
     @classmethod
     def from_yaml(cls, template_path: Union[str, Path]) -> Template:
