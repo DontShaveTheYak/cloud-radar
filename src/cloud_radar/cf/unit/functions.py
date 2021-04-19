@@ -8,7 +8,7 @@ import base64 as b64
 import ipaddress
 import json
 import re
-from typing import Any, List, TYPE_CHECKING, Union
+from typing import Any, Dict, List, TYPE_CHECKING
 
 import requests
 
@@ -19,10 +19,22 @@ if TYPE_CHECKING:
 
 
 def base64(_t: "Template", value: Any) -> str:
+    """Solves AWS Base64 intrinsic function.
+
+    Args:
+        _t (Template): Not used.
+        value (Any): The value to encode.
+
+    Raises:
+        TypeError: If value is not a String.
+
+    Returns:
+        str: The value as a Base64 encoded String.
+    """
 
     if not isinstance(value, str):
-        raise Exception(
-            f"The value for !Base64 or Fn::Base64 must be a String, not {type(value).__name__}."
+        raise TypeError(
+            f"Fn::Base64 - The value must be a String, not {type(value).__name__}."
         )
 
     b_string = b64.b64encode(value.encode("ascii"))
@@ -30,24 +42,38 @@ def base64(_t: "Template", value: Any) -> str:
     return b_string.decode("ascii")
 
 
-def cidr(_t: "Template", value: Any) -> List[str]:
+def cidr(_t: "Template", values: Any) -> List[str]:
+    """Solves AWS Cidr intrinsic function.
 
-    if not isinstance(value, list):
-        raise Exception(
-            f"The value for !Cidr or Fn::Cidr must be a List, not {type(value).__name__}."
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a List.
+        ValueError: If length of values is not 3.
+        Exception: If unable to convert network address to desired subnets.
+
+    Returns:
+        List[str]: The subnets with network address and mask.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::Cidr - The value must be a List, not {type(values).__name__}."
         )
 
-    if not len(value) == 3:
-        raise Exception(
+    if not len(values) == 3:
+        raise ValueError(
             (
-                "The value for !Cidr or Fn::Cidr must contain "
+                "Fn::Cidr - The value must contain "
                 "a ipBlock, the count of subnets and the cidrBits."
             )
         )
 
-    ip_block: str = value[0]
-    count = int(value[1])
-    hostBits = int(value[2])
+    ip_block: str = values[0]
+    count = int(values[1])
+    hostBits = int(values[2])
 
     mask = 32 - hostBits
 
@@ -63,124 +89,193 @@ def cidr(_t: "Template", value: Any) -> List[str]:
         )
 
 
-def and_(_t: "Template", equation: Any) -> bool:
-    raise NotImplementedError("Fn::And had not been implemented.")
+def and_(_t: "Template", values: Any) -> bool:
+    """Solves AWS And intrinsic function.
+
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a List.
+        ValueError: If length of values is not between 2 and 10.
+
+    Returns:
+        bool: True if all values are True.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::And - The values must be a List, not {type(values).__name__}."
+        )
+
+    len_ = len(values)
+
+    if len_ < 2 or len_ > 10:
+        raise ValueError("Fn::And - The values must have between 2 and 10 conditions.")
+
+    return all(values)
 
 
-def equals(_t: "Template", equation: Any) -> bool:
+def equals(_t: "Template", values: Any) -> bool:
     """Solves AWS Equals intrinsic function.
 
     Args:
-        _t (Template): Not used
-        equation (Any): The equation to be solved.
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
 
     Raises:
-        TypeError: If equation is not a list.
-        ValueError: If length of equation is not 2.
+        TypeError: If values is not a list.
+        ValueError: If length of values is not 2.
 
     Returns:
-        bool: True if the values in the equation are equal.
+        bool: True if the values are equal.
     """
 
-    if not isinstance(equation, list):
+    if not isinstance(values, list):
         raise TypeError(
-            f"Fn::Equals - The equations must be a List, not {type(equation).__name__}."
+            f"Fn::Equals - The values must be a List, not {type(values).__name__}."
         )
 
-    if not len(equation) == 2:
-        raise ValueError(
-            (
-                "The equation for !Equals or Fn::Equals must contain "
-                "two values to compare."
-            )
-        )
+    if not len(values) == 2:
+        raise ValueError("Fn::Equals - The values must contain two values to compare.")
 
-    return equation[0] == equation[1]
+    return values[0] == values[1]
 
 
-def if_(template: "Template", equation: Any) -> Any:
-    """Solves AWS If intrinsic functions.
+def if_(template: "Template", values: Any) -> Any:
+    """Solves AWS If intrinsic function.
 
     Args:
         template (Template): The template being tested.
-        equation (Any): The equation to be solved.
+        values (Any): The values passed to the function.
 
     Raises:
-        TypeError: If equation is not a list.
-        ValueError: If length of equation is not 3.
-        TypeError: If the first value in the equation is not str.
+        TypeError: If values is not a list.
+        ValueError: If length of values is not 3.
+        TypeError: If the first value in the values is not str.
 
     Returns:
-        Any: The result of the equation.
+        Any: The first value if True, otherwise second value.
     """
 
-    if not isinstance(equation, list):
+    if not isinstance(values, list):
         raise TypeError(
-            f"The equation for !If or Fn::If must be a List, not {type(equation).__name__}."
+            f"Fn::If - The values must be a List, not {type(values).__name__}."
         )
 
-    if not len(equation) == 3:
+    if not len(values) == 3:
         raise ValueError(
             (
-                "The equation for !If or Fn::If must contain "
+                "Fn::If - The values must contain "
                 "the name of a condition, a True value and "
                 "a False value."
             )
         )
 
-    condition = equation[0]
+    condition = values[0]
 
     if not isinstance(condition, str):
-        raise TypeError(f"AWS Condition should be str, not {type(condition).__name__}.")
+        raise TypeError(
+            f"Fn::If - The Condition should be a String, not {type(condition).__name__}."
+        )
 
     condition = template.template["Conditions"][condition]
 
     if condition:
-        return equation[1]
+        return values[1]
 
-    return equation[2]
-
-
-def not_(_t: "Template", equation: Any) -> bool:
-    raise NotImplementedError("Fn::Not had not been implemented.")
+    return values[2]
 
 
-def or_(_t: "Template", equation: Any) -> bool:
-    raise NotImplementedError("Fn::Or had not been implemented.")
+def not_(_t: "Template", values: Any) -> bool:
+    """Solves AWS Not intrinsic function.
+
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a list.
+        ValueError: If length of values is not 1.
+
+    Returns:
+        bool: The opposite of values.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::Not - The values must be a List, not {type(values).__name__}."
+        )
+
+    if not len(values) == 1:
+        raise ValueError("Fn::Not - The values must contain a single Condition.")
+
+    condition: bool = values[0]
+
+    return not condition
 
 
-def find_in_map(template: "Template", equation: Any) -> Any:
+def or_(_t: "Template", values: Any) -> bool:
+    """Solves AWS Or intrinsic function.
+
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a list.
+        ValueError: If length of values is not between 2 and 10.
+
+    Returns:
+        bool: True if any value in the values is True.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::Or - The values must be a List, not {type(values).__name__}."
+        )
+
+    len_: int = len(values)
+
+    if len_ < 2 or len_ > 10:
+        raise ValueError("Fn::Not - The values must have between 2 and 10 conditions.")
+
+    return any(values)
+
+
+def find_in_map(template: "Template", values: Any) -> Any:
     """Solves AWS FindInMap intrinsic function.
 
     Args:
         template (Template): The template being tested.
-        equation (Any): The equation to be solved.
+        values (Any): The values passed to the function.
 
     Raises:
-        TypeError: If equation is not a list.
-        ValueError: If length of equation is not 3.
+        TypeError: If values is not a list.
+        ValueError: If length of values is not 3.
         KeyError: If the Map or specified keys are missing.
 
     Returns:
         Any: The requested value from the Map.
     """
 
-    if not isinstance(equation, list):
+    if not isinstance(values, list):
         raise TypeError(
-            f"Fn::FindInMap - The equation must be a List, not {type(equation).__name__}."
+            f"Fn::FindInMap - The values must be a List, not {type(values).__name__}."
         )
 
-    if not len(equation) == 3:
+    if not len(values) == 3:
         raise ValueError(
             (
-                "The equation for !FindInMap  or Fn::FindInMap  must contain "
+                "Fn::FindInMap - The values must contain "
                 "a MapName, TopLevelKey and SecondLevelKey."
             )
         )
 
-    map_name = equation[0]
-    top_key = equation[1]
-    second_key = equation[2]
+    map_name = values[0]
+    top_key = values[1]
+    second_key = values[2]
 
     if "Mappings" not in template.template:
         raise KeyError("Unable to find Mappings section in template.")
@@ -203,16 +298,16 @@ def find_in_map(template: "Template", equation: Any) -> Any:
     return first_level[second_key]
 
 
-def get_att(template: "Template", equation: Any) -> str:
+def get_att(template: "Template", values: Any) -> str:
     """Solves AWS GetAtt intrinsic function.
 
     Args:
         template (Template): The template being tested.
-        equation (Any): The equation to be solved.
+        values (Any): The values passed to the function.
 
     Raises:
-        TypeError: If equation is not a list.
-        ValueError: If length of equation is not 3.
+        TypeError: If values is not a list.
+        ValueError: If length of values is not 3.
         TypeError: If the logicalNameOfResource and attributeName are not str.
         KeyError: If the logicalNameOfResource is not found in the template.
 
@@ -220,21 +315,21 @@ def get_att(template: "Template", equation: Any) -> str:
         str: The interpolated str `logicalNameOfResource.attributeName`.
     """
 
-    if not isinstance(equation, list):
+    if not isinstance(values, list):
         raise TypeError(
-            f"Fn::GetAtt - The equation must be a List, not {type(equation).__name__}."
+            f"Fn::GetAtt - The values must be a List, not {type(values).__name__}."
         )
 
-    if not len(equation) == 2:
+    if not len(values) == 2:
         raise ValueError(
             (
-                "Fn::GetAtt - The equation must contain "
+                "Fn::GetAtt - The values must contain "
                 "the logicalNameOfResource and attributeName."
             )
         )
 
-    resource_name = equation[0]
-    att_name = equation[1]
+    resource_name = values[0]
+    att_name = values[1]
 
     if not isinstance(resource_name, str) or not isinstance(att_name, str):
         raise TypeError(
@@ -300,52 +395,174 @@ def import_value(template: "Template", name: Any) -> str:
     return template.imports[name]
 
 
-def join(_t: "Template", value: Any) -> str:
+def join(_t: "Template", values: Any) -> str:
+    """Solves AWS Join intrinsic function.
 
-    delimiter: str
-    items: List[str]
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
 
-    if not isinstance(value, list):
-        raise Exception(
-            f"The value for !Join or Fn::Join must be list not {type(value).__name__}."
+    Raises:
+        TypeError: If values is not a List.
+        ValueError: If values length is not 2.
+        TypeError: If first value isn't a String and second isn't a List.
+
+    Returns:
+        str: The items in the List joined by the delimiter.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::Join - The values must be a List, not {type(values).__name__}."
         )
 
-    if not len(value) == 2:
-        raise Exception(
+    if not len(values) == 2:
+        raise ValueError(
             (
-                "The value for !Join or Fn::Join must contain "
+                "Fn::Join - The values must contain "
                 "a delimiter and a list of items to join."
             )
         )
 
-    if isinstance(value[0], str) and isinstance(value[1], list):
-        delimiter = value[0]
-        items = value[1]
+    delimiter: str
+    items: List[str]
+
+    if isinstance(values[0], str) and isinstance(values[1], list):
+        delimiter = values[0]
+        items = values[1]
     else:
-        raise Exception(
-            "The first value for !Join or Fn::Join must be a String and the second a List."
+        raise TypeError(
+            "Fn::Join-- The first value must be a String and the second a List."
         )
 
     return delimiter.join(items)
 
 
-def select(_t: "Template", equation: Any) -> Any:
-    raise NotImplementedError("Fn::Select has not been implemented.")
-
-
-def split(_t: "Template", equation: Any) -> List[str]:
-    raise NotImplementedError("Fn::Split had not been implemented.")
-
-
-def sub(template: "Template", function: str) -> str:
-    """Solves AWS Sub intrinsic functions.
+def select(_t: "Template", values: Any) -> Any:
+    """Solves AWS Select intrinsic function.
 
     Args:
-        function (str): A string with ${} parameters or resources referenced in the template.
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a List.
+        ValueError: If values length is not 2.
+        TypeError: If first value is not a int and second is not a List.
+        IndexError: If the List size is smaller than the index.
 
     Returns:
-        str: Returns the rendered string.
-    """  # noqa: B950
+        Any: The selected value form the List.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::Select - The values must be a List, not {type(values).__name__}."
+        )
+
+    if len(values) != 2:
+        raise ValueError(
+            (
+                "Fn::Select - The values must contain "
+                "an index and a list of items to select from."
+            )
+        )
+
+    index: int
+    items: List[Any]
+
+    if isinstance(values[0], int) and isinstance(values[1], list):
+        index = values[0]
+        items = values[1]
+    else:
+        raise TypeError(
+            "Fn::Select - The first value must be a Number and the second a List."
+        )
+
+    try:
+        return items[index]
+    except IndexError:
+        raise IndexError("Fn::Select - List size is smaller than the Index given.")
+
+
+def split(_t: "Template", values: Any) -> List[str]:
+    """Solves AWS Split intrinsic function.
+
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a List.
+        ValueError: If values length is not 2.
+        TypeError: If first value isn't a String and second isn't a String.
+
+    Returns:
+        List[str]: The String split by the delimiter.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::Split - The values must be a List, not {type(values).__name__}."
+        )
+
+    if not len(values) == 2:
+        raise ValueError(
+            (
+                "Fn::Split - The values must contain "
+                "a delimiter and a String to split."
+            )
+        )
+
+    delimiter: str
+    source_string: str
+
+    if isinstance(values[0], str) and isinstance(values[1], str):
+        delimiter = values[0]
+        source_string = values[1]
+    else:
+        raise TypeError(
+            "Fn::Split-- The first value must be a String and the second a String."
+        )
+
+    return source_string.split(delimiter)
+
+
+def sub(template: "Template", values: Any) -> str:
+    """Solves AWS Sub intrinsic function.
+
+    Args:
+        template (Template): The template being tested.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a String or List.
+
+    Returns:
+        str: Input String with variables substituted.
+    """
+
+    if isinstance(values, str):
+        return sub_s(template, values)
+
+    if isinstance(values, list):
+        return sub_l(template, values)
+
+    raise TypeError(
+        f"Fn::Sub - The input must be a String or List, not {type(values).__name__}."
+    )
+
+
+def sub_s(template: "Template", value: str) -> str:
+    """Solves AWS Sub intrinsic function String version.
+
+    Args:
+        template (Template): The template being tested.
+        value (str): The String containing variables.
+
+    Returns:
+        str: Input String with variables substituted.
+    """
 
     def replace_var(m):
         var = m.group(2)
@@ -353,28 +570,102 @@ def sub(template: "Template", function: str) -> str:
 
     reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
 
-    if re.search(reVar, function):
-        return re.sub(reVar, replace_var, function).replace("${!", "${")
+    if re.search(reVar, value):
+        return re.sub(reVar, replace_var, value).replace("${!", "${")
 
-    return function.replace("${!", "${")
-
-
-def transform(template: "Template", equation: Any) -> Any:
-    raise NotImplementedError("Fn::Transform has not been implemented.")
+    return value.replace("${!", "${")
 
 
-def ref(template: "Template", var_name: str) -> Union[str, int, float, list]:
+def sub_l(template: "Template", values: List) -> str:
+    """Solves AWS Sub intrinsic function List version.
+
+    Args:
+        template (Template): The template being tested.
+        values (List): The List containing input string and var Map.
+
+    Raises:
+        ValueError: If length of values is not 2.
+        TypeError: If first value not String and second not Map.
+
+    Returns:
+        str: Input String with variables substituted.
+    """
+
+    source_string: str
+    local_vars: Dict[str, str]
+
+    if len(values) != 2:
+        raise ValueError(
+            (
+                "Fn::Sub - The values must contain "
+                "a source string and a Map of variables."
+            )
+        )
+
+    if isinstance(values[0], str) and isinstance(values[1], dict):
+        source_string = values[0]
+        local_vars = values[1]
+    else:
+        raise TypeError(
+            "Fn::Sub - The first value must be a String and the second a Map."
+        )
+
+    def replace_var(m):
+        var = m.group(2)
+
+        if var in local_vars:
+            return local_vars[var]
+
+        return ref(template, var)
+
+    reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
+
+    if re.search(reVar, source_string):
+        return re.sub(reVar, replace_var, source_string).replace("${!", "${")
+
+    return source_string.replace("${!", "${")
+
+
+def transform(_t: "Template", values: Any) -> str:
+    """Solves AWS Transform intrinstic function.
+
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a Dict.
+        KeyError: If Name and Parameters are not in values.
+
+    Returns:
+        str: The value of Name from values.
+    """
+
+    if not isinstance(values, dict):
+        raise TypeError(
+            f"Fn::Transform - The values must be a Dict, not {type(values).__name__}."
+        )
+
+    if "Name" not in values and "Parameters" not in values:
+        raise KeyError(
+            ("Fn::Transform - The values must contain " "a Name and Parameters.")
+        )
+
+    return values["Name"]
+
+
+def ref(template: "Template", var_name: str) -> Any:
     """Takes the name of a parameter, resource or pseudo variable and finds the value for it.
 
     Args:
-        template (Dict): The Cloudformation template.
+        template (Template): The template being tested.
         var_name (str): The name of the parameter, resource or pseudo variable.
 
     Raises:
         ValueError: If the supplied pseudo variable doesn't exist.
 
     Returns:
-        Union[str, int, float, list]: The value of the parameter, resource or pseudo variable.
+        Any: The value of the parameter, resource or pseudo variable.
     """
 
     if "AWS::" in var_name:
@@ -396,6 +687,17 @@ def ref(template: "Template", var_name: str) -> Union[str, int, float, list]:
 
 
 def get_region_azs(region_name: str) -> List[str]:
+    """Retries AZs from REGION_DATA.
+
+    Args:
+        region_name (str): The name of the AWS region.
+
+    Raises:
+        Exception: If unable to find data for provided region name.
+
+    Returns:
+        List[str]: List of AZs for provided region name.
+    """
 
     global REGION_DATA
 
@@ -410,6 +712,11 @@ def get_region_azs(region_name: str) -> List[str]:
 
 
 def _fetch_region_data() -> List[dict]:
+    """Fetchs Region JSON from URL.
+
+    Returns:
+        List[dict]: Region data.
+    """
 
     url = "https://raw.githubusercontent.com/jsonmaur/aws-regions/master/regions.json"
 

@@ -13,10 +13,20 @@ from cloud_radar.cf.unit._template import (
 def template():
     template_path = Path(__file__).parent / "../../templates/log_bucket/log_bucket.yaml"
 
-    return Template.from_yaml(template_path.resolve())
+    return Template.from_yaml(template_path.resolve(), {})
 
 
-def test_default(template: Template):
+def test_constructor(template: Template):
+
+    with pytest.raises(TypeError) as e:
+        Template("not a dict")  # type: ignore
+
+    assert "Template should be a dict, not str." in str(e)
+
+    with pytest.raises(TypeError) as e:
+        Template({}, "")  # type: ignore
+
+    assert "Imports should be a dict, not str." in str(e)
 
     assert isinstance(template.raw, str), "Should load a string instance of template"
     assert isinstance(
@@ -25,12 +35,6 @@ def test_default(template: Template):
     assert (
         template.Region == Template.Region
     ), "Should set the default region from the class."
-
-
-def test_missing_template():
-
-    with pytest.raises(TypeError):
-        Template("not a dict")
 
 
 @patch("builtins.open", new_callable=mock_open, read_data="{'Foo': 'bar'}")

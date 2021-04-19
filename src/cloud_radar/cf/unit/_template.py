@@ -34,6 +34,8 @@ class Template:
 
         Args:
             template (Dict): The Cloudformation template as a dictionary.
+            imports (Optional[Dict[str, str]], optional): Values this template plans
+            to import from other stacks exports. Defaults to None.
 
         Raises:
             TypeError: If template is not a dictionary.
@@ -44,10 +46,12 @@ class Template:
             imports = {}
 
         if not isinstance(template, dict):
-            raise TypeError(f"Template should be dict not {type(template).__name__}.")
+            raise TypeError(
+                f"Template should be a dict, not {type(template).__name__}."
+            )
 
         if not isinstance(imports, dict):
-            raise TypeError(f"Imports should be dict not {type(imports).__name__}.")
+            raise TypeError(f"Imports should be a dict, not {type(imports).__name__}.")
 
         self.raw: str = yaml.dump(template)
         self.template = template
@@ -55,7 +59,19 @@ class Template:
         self.imports = imports
 
     @classmethod
-    def from_yaml(cls, template_path: Union[str, Path]) -> Template:
+    def from_yaml(
+        cls, template_path: Union[str, Path], imports: Optional[Dict[str, str]] = None
+    ) -> Template:
+        """Loads a Cloudformation template from file.
+
+        Args:
+            template_path (Union[str, Path]): The path to the template.
+            imports (Optional[Dict[str, str]], optional): Values this template plans
+            to import from other stacks exports. Defaults to None.
+
+        Returns:
+            Template: A Template object ready for testing.
+        """
 
         with open(template_path) as f:
             raw = f.read()
@@ -66,7 +82,7 @@ class Template:
 
         template = yaml.load(tmp_str, Loader=yaml.FullLoader)
 
-        return cls(template)
+        return cls(template, imports)
 
     def render(
         self, params: Dict[str, str] = None, region: Union[str, None] = None

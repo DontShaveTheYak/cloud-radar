@@ -17,12 +17,10 @@ def fake_t() -> Template:
 def test_base64(fake_t: Template):
     value = 1
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(TypeError) as e:
         result = functions.base64(fake_t, value)
 
-    assert "The value for !Base64 or Fn::Base64 must be a String, not int." in str(
-        e.value
-    )
+    assert "must be a String, not int." in str(e.value)
 
     value = "TestString"
 
@@ -33,12 +31,12 @@ def test_base64(fake_t: Template):
 
 def test_cidr(fake_t: Template):
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(TypeError) as e:
         result = functions.cidr(fake_t, {})
 
     assert "must be a List, not" in str(e)
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(ValueError) as e:
         result = functions.cidr(fake_t, [1])
 
     assert "a ipBlock, the count of subnets and the cidrBits." in str(e)
@@ -65,9 +63,34 @@ def test_cidr(fake_t: Template):
     assert "unable to convert" in str(e)
 
 
-@pytest.mark.xfail(reason="Not Implemented.")
 def test_and(fake_t):
-    functions.and_(fake_t, [])
+
+    with pytest.raises(TypeError) as e:
+        result = functions.and_(fake_t, {})
+
+    assert "List, not dict." in str(e)
+
+    with pytest.raises(ValueError) as e:
+        result = functions.and_(fake_t, [True])
+
+    assert "between 2 and 10 conditions." in str(e)
+
+    with pytest.raises(ValueError) as e:
+        result = functions.and_(fake_t, [True] * 11)
+
+    assert "between 2 and 10 conditions." in str(e)
+
+    result = functions.and_(fake_t, [True, True])
+
+    assert result is True
+
+    result = functions.and_(fake_t, [True, False])
+
+    assert result is False
+
+    result = functions.and_(fake_t, [False, False])
+
+    assert result is False
 
 
 def test_equals(fake_t: Template):
@@ -109,12 +132,12 @@ def test_if(fake_t: Template):
     with pytest.raises(ValueError) as e:
         result = functions.if_(fake_t, [0])
 
-    assert "The equation for !If or Fn::If must contain" in str(e.value)
+    assert "True value and a False value." in str(e.value)
 
     with pytest.raises(TypeError) as e:
         result = functions.if_(fake_t, [0, 0, 0])
 
-    assert "AWS Condition should be str, not int." in str(e.value)
+    assert "Condition should be a String, not int." in str(e.value)
 
     result = functions.if_(fake_t, ["test", "true_value", "false_value"])
 
@@ -131,14 +154,55 @@ def test_if(fake_t: Template):
         functions.if_(fake_t, [True, "True", "False"])
 
 
-@pytest.mark.xfail(reason="Not Implemented.")
 def test_not(fake_t):
-    functions.not_(fake_t, [])
+
+    with pytest.raises(TypeError) as e:
+        result = functions.not_(fake_t, {})
+
+    assert "must be a List, not dict." in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        result = functions.not_(fake_t, [True, True])
+
+    assert "must contain a single Condition." in str(e.value)
+
+    result = functions.not_(fake_t, [True])
+
+    assert result is False
+
+    result = functions.not_(fake_t, [False])
+
+    assert result is True
 
 
-@pytest.mark.xfail(reason="Not Implemented.")
 def test_or(fake_t):
-    functions.or_(fake_t, [])
+
+    with pytest.raises(TypeError) as e:
+        result = functions.or_(fake_t, {})
+
+    assert "must be a List, not dict." in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        result = functions.or_(fake_t, [True])
+
+    assert "between 2 and 10 conditions." in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        result = functions.or_(fake_t, [True] * 11)
+
+    assert "between 2 and 10 conditions." in str(e.value)
+
+    result = functions.or_(fake_t, [True, True])
+
+    assert result is True
+
+    result = functions.or_(fake_t, [True, False])
+
+    assert result is True
+
+    result = functions.or_(fake_t, [False, False])
+
+    assert result is False
 
 
 def test_find_in_map():
@@ -162,31 +226,31 @@ def test_find_in_map():
     first_key = "FirstKey"
     second_key = "SecondKey"
 
-    equation = [map_name, first_key, second_key]
+    values = [map_name, first_key, second_key]
 
     with pytest.raises(KeyError) as e:
-        functions.find_in_map(template, equation)
+        functions.find_in_map(template, values)
 
     assert "Unable to find Mappings section in template." in str(e)
 
     template.template["Mappings"] = {}
 
     with pytest.raises(KeyError) as e:
-        functions.find_in_map(template, equation)
+        functions.find_in_map(template, values)
 
     assert f"Unable to find {map_name} in Mappings section of template." in str(e)
 
     template.template["Mappings"][map_name] = {}
 
     with pytest.raises(KeyError) as e:
-        functions.find_in_map(template, equation)
+        functions.find_in_map(template, values)
 
     assert f"Unable to find key {first_key}" in str(e)
 
     template.template["Mappings"][map_name][first_key] = {}
 
     with pytest.raises(KeyError) as e:
-        functions.find_in_map(template, equation)
+        functions.find_in_map(template, values)
 
     assert f"Unable to find key {second_key}" in str(e)
 
@@ -194,7 +258,7 @@ def test_find_in_map():
 
     template.template["Mappings"][map_name][first_key][second_key] = expected
 
-    result = functions.find_in_map(template, equation)
+    result = functions.find_in_map(template, values)
 
     assert result == expected
 
@@ -210,7 +274,7 @@ def test_get_att():
     with pytest.raises(TypeError) as e:
         functions.get_att(template, {})
 
-    assert "Fn::GetAtt - The equation must be a List, not dict." in str(e)
+    assert "Fn::GetAtt - The values must be a List, not dict." in str(e)
 
     with pytest.raises(ValueError) as e:
         functions.get_att(template, [0])
@@ -225,16 +289,16 @@ def test_get_att():
     resource_name = "TestA"
     att = "TestAttribute"
 
-    equation = [resource_name, att]
+    values = [resource_name, att]
 
     with pytest.raises(KeyError) as e:
-        functions.get_att(template, equation)
+        functions.get_att(template, values)
 
     assert f"{resource_name} not found in template." in str(e)
 
     template.template["Resources"]["TestA"] = {}
 
-    result = functions.get_att(template, equation)
+    result = functions.get_att(template, values)
 
     assert result == f"{resource_name}.{att}"
 
@@ -263,7 +327,7 @@ def test_get_region_azs(mocker):
 
     mocker.patch.object(functions, "REGION_DATA", None)
     mock_fetch = mocker.patch.object(functions, "_fetch_region_data")
-    mock_fetch.return_value = []
+    mock_fetch.return_value = [{"code": "SomeRegion"}]
 
     with pytest.raises(Exception) as e:
         result = functions.get_region_azs(region_name)
@@ -356,49 +420,111 @@ def test_join(fake_t: Template):
 
     value: Dict[str, Any] = {}
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(TypeError) as e:
         result = functions.join(fake_t, value)
 
-    assert "must be list not dict" in str(e.value)
+    assert "must be a List, not dict" in str(e.value)
 
     value = ["a", "b", "c"]
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(ValueError) as e:
         result = functions.join(fake_t, value)
 
     assert "must contain a delimiter and a list of items to join." in str(e.value)
 
     value = [1, {}]
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(TypeError) as e:
         result = functions.join(fake_t, value)
 
-    assert (
-        "The first value for !Join or Fn::Join must be a String and the second a List."
-        in str(e.value)
-    )
+    assert "must be a String and the second a List." in str(e.value)
 
 
-@pytest.mark.xfail(reason="Not Implemented.")
 def test_select(fake_t):
-    functions.select(fake_t, [])
+
+    with pytest.raises(TypeError) as e:
+        result = functions.select(fake_t, {})
+
+    assert "must be a List, not dict." in str(e)
+
+    with pytest.raises(ValueError) as e:
+        result = functions.select(fake_t, [0])
+
+    assert "an index and a list of items to select from." in str(e)
+
+    with pytest.raises(TypeError) as e:
+        result = functions.select(fake_t, [0, 0])
+
+    assert "be a Number and the second a List." in str(e)
+
+    with pytest.raises(IndexError) as e:
+        result = functions.select(fake_t, [5, ["Test"] * 3])
+
+    assert "smaller than the Index given." in str(e)
+
+    result = functions.select(fake_t, [2, ["1", "2", "3"]])
+
+    assert result == "3"
 
 
-@pytest.mark.xfail(reason="Not Implemented.")
 def test_split(fake_t):
-    functions.split(fake_t, [])
+
+    with pytest.raises(TypeError) as e:
+        result = functions.split(fake_t, {})
+
+    assert "must be a List, not dict." in str(e)
+
+    with pytest.raises(ValueError) as e:
+        result = functions.split(fake_t, [0])
+
+    assert "a delimiter and a String to split." in str(e)
+
+    with pytest.raises(TypeError) as e:
+        result = functions.split(fake_t, [0, 0])
+
+    assert "String and the second a String." in str(e)
+
+    result = functions.split(fake_t, [",", "A,B,C"])
+
+    assert result == ["A", "B", "C"]
 
 
-def test_sub():
+def test_sub(mocker):
     template_dict = {"Parameters": {"Foo": {"Value": "bar"}}}
 
     template = Template(template_dict)
 
-    assert (
-        functions.sub(template, "Foo ${Foo}") == "Foo bar"
-    ), "Should subsuite a parameter."
+    mock_s = mocker.patch.object(functions, "sub_s", autospec=True)
+    mock_l = mocker.patch.object(functions, "sub_l", autospec=True)
 
-    result = functions.sub(template, "not ${!Test}")
+    with pytest.raises(TypeError) as e:
+        functions.sub(template, {})
+
+    assert "String or List, not dict." in str(e)
+
+    functions.sub(template, "")
+
+    mock_s.assert_called()
+    mock_l.assert_not_called()
+
+    mocker.resetall()
+
+    functions.sub(template, [])
+
+    mock_l.assert_called()
+    mock_s.assert_not_called()
+
+
+def test_sub_s():
+    template_dict = {"Parameters": {"Foo": {"Value": "bar"}}}
+
+    template = Template(template_dict)
+
+    result = functions.sub_s(template, "Foo ${Foo}")
+
+    assert result == "Foo bar", "Should subsuite a parameter."
+
+    result = functions.sub_s(template, "not ${!Test}")
 
     assert result == "not ${Test}", "Should return a string literal."
 
@@ -411,9 +537,61 @@ def test_sub():
     assert result == "us-east-1 bar ${BASH_VAR}", "Should render multiple variables."
 
 
-@pytest.mark.xfail(reason="Not Implemented.")
+def test_sub_l():
+    template_dict = {"Parameters": {"Foo": {"Value": "bar"}}}
+
+    add_metadata(template_dict, "us-east-1")
+
+    template = Template(template_dict)
+
+    with pytest.raises(ValueError) as e:
+        functions.sub_l(template, [0])
+
+    assert "source string and a Map of variables." in str(e)
+
+    with pytest.raises(TypeError) as e:
+        functions.sub_l(template, [0, 0])
+
+    assert "String and the second a Map." in str(e)
+
+    var_map = {"LocalA": "TestA"}
+
+    input_string = "${AWS::Region} ${Foo} ${!BASH_VAR} ${LocalA}"
+
+    result = functions.sub_l(template, [input_string, var_map])
+
+    assert "us-east-1" in result, "Should render aws pseudo vars."
+
+    assert "bar" in result, "Should render parameters."
+
+    assert "${BASH_VAR}" in result, "Should allow escaping variables."
+
+    assert "TestA" in result, "Should render local variables."
+
+    test_string = "SomeString"
+
+    result = functions.sub_l(template, [test_string, var_map])
+
+    assert result == test_string
+
+
 def test_transform(fake_t):
-    functions.transform(fake_t, [])
+
+    with pytest.raises(TypeError) as e:
+        result = functions.transform(fake_t, [])
+
+    assert "must be a Dict, not list." in str(e)
+
+    with pytest.raises(KeyError) as e:
+        result = functions.transform(fake_t, {})
+
+    assert "a Name and Parameters." in str(e)
+
+    transform = {"Name": "TestName", "Parameters": "TestParameters"}
+
+    result = functions.transform(fake_t, transform)
+
+    assert result == "TestName"
 
 
 def test_ref():
