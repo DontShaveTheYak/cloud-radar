@@ -106,6 +106,7 @@ jobs:
         with:
           tag: ${{needs.tag.outputs.tag}}
           version: ${{needs.tag.outputs.tag}}
+          commitish: develop
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -116,5 +117,6 @@ jobs:
           tag: ${{needs.tag.outputs.tag}}
           version: ${{needs.tag.outputs.tag}}
           publish: true
+          commitish: master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
