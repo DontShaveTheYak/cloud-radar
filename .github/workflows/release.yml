@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python 3.9
-        uses: actions/setup-python@v2.2.1
+        uses: actions/setup-python@v2.2.2
         with:
           python-version: '3.9'
           architecture: x64
@@ -72,7 +72,7 @@ jobs:
         uses: actions/checkout@v2.3.4
 
       - name: Setup Python 3.9
-        uses: actions/setup-python@v2.2.1
+        uses: actions/setup-python@v2.2.2
         with:
           python-version: '3.9'
           architecture: x64
@@ -106,6 +106,7 @@ jobs:
         with:
           tag: ${{needs.tag.outputs.tag}}
           version: ${{needs.tag.outputs.tag}}
+          commitish: develop
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -116,5 +117,6 @@ jobs:
           tag: ${{needs.tag.outputs.tag}}
           version: ${{needs.tag.outputs.tag}}
           publish: true
+          commitish: master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
