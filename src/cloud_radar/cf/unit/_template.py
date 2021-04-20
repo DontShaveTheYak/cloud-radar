@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from cfn_tools import dump_yaml, load_yaml  # type: ignore
 
 import yaml
+
+from . import functions
+
+IntrinsicFunc = Callable[["Template", Any], Any]
 
 
 class Template:
@@ -23,26 +26,52 @@ class Template:
     StackName: str = ""  # Not yet implemented
     URLSuffix: str = "amazonaws.com"  # Other regions not implemented
 
-    def __init__(self, template: Dict[str, Any]) -> None:
+    def __init__(
+        self, template: Dict[str, Any], imports: Optional[Dict[str, str]] = None
+    ) -> None:
         """Loads a Cloudformation template from a file and saves
         it as a dictionary.
 
         Args:
             template (Dict): The Cloudformation template as a dictionary.
+            imports (Optional[Dict[str, str]], optional): Values this template plans
+            to import from other stacks exports. Defaults to None.
 
         Raises:
             TypeError: If template is not a dictionary.
+            TypeError: If imports is not a dictionary.
         """
 
+        if imports is None:
+            imports = {}
+
         if not isinstance(template, dict):
-            raise TypeError(f"Template should be dict not {type(template).__name__}.")
+            raise TypeError(
+                f"Template should be a dict, not {type(template).__name__}."
+            )
+
+        if not isinstance(imports, dict):
+            raise TypeError(f"Imports should be a dict, not {type(imports).__name__}.")
 
         self.raw: str = yaml.dump(template)
         self.template = template
         self.Region = Template.Region
+        self.imports = imports
 
     @classmethod
-    def from_yaml(cls, template_path: Union[str, Path]) -> Template:
+    def from_yaml(
+        cls, template_path: Union[str, Path], imports: Optional[Dict[str, str]] = None
+    ) -> Template:
+        """Loads a Cloudformation template from file.
+
+        Args:
+            template_path (Union[str, Path]): The path to the template.
+            imports (Optional[Dict[str, str]], optional): Values this template plans
+            to import from other stacks exports. Defaults to None.
+
+        Returns:
+            Template: A Template object ready for testing.
+        """
 
         with open(template_path) as f:
             raw = f.read()
@@ -53,7 +82,7 @@ class Template:
 
         template = yaml.load(tmp_str, Loader=yaml.FullLoader)
 
-        return cls(template)
+        return cls(template, imports)
 
     def render(
         self, params: Dict[str, str] = None, region: Union[str, None] = None
@@ -102,22 +131,26 @@ class Template:
             Any: Return the rendered data structure.
         """
 
+        aws_functions: Dict[str, IntrinsicFunc] = {
+            "Ref": functions.ref,
+            "Fn::Equals": functions.equals,
+            "Fn::If": functions.if_,
+            "Fn::Sub": functions.sub,
+            "Fn::Join": functions.join,
+            "Fn::Base64": functions.base64,
+            "Fn::Cidr": functions.cidr,
+        }
+
         if isinstance(data, dict):
             for key, value in data.items():
 
                 if key == "Ref":
-                    return r_ref(self.template, value)
+                    return functions.ref(self, value)
 
                 value = self.resolve_values(value)
 
-                if key == "Fn::Equals":
-                    return r_equals(value)
-
-                if key == "Fn::If":
-                    return r_if(self.template, value)
-
-                if key == "Fn::Sub":
-                    return r_sub(self.template, value)
+                if key in aws_functions:
+                    return aws_functions[key](self, value)
 
                 data[key] = self.resolve_values(value)
             return data
@@ -183,93 +216,3 @@ def add_metadata(template: Dict, region: str) -> None:
         template["Metadata"] = {}
 
     template["Metadata"].update(metadata)
-
-
-def r_equals(function: list) -> bool:
-    """Solves AWS Equals intrinsic functions.
-
-    Args:
-        function (list): A list with two items to be compared.
-
-    Returns:
-        bool: Returns True if the items are equal, else False.
-    """
-
-    return function[0] == function[1]
-
-
-def r_if(template: Dict, function: list) -> Any:
-    """Solves AWS If intrinsic functions.
-
-    Args:
-        function (list): The condition, true value and false value.
-
-    Returns:
-        Any: The return value could be another intrinsic function, boolean or string.
-    """
-
-    condition = function[0]
-
-    if type(condition) is not str:
-        raise Exception(f"AWS Condition should be str not {type(condition).__name__}.")
-
-    condition = template["Conditions"][condition]
-
-    if condition:
-        return function[1]
-
-    return function[2]
-
-
-def r_ref(template: Dict, var_name: str) -> Union[str, int, float, list]:
-    """Takes the name of a parameter, resource or pseudo variable and finds the value for it.
-
-    Args:
-        template (Dict): The Cloudformation template.
-        var_name (str): The name of the parameter, resource or pseudo variable.
-
-    Raises:
-        ValueError: If the supplied pseudo variable doesn't exist.
-
-    Returns:
-        Union[str, int, float, list]: The value of the parameter, resource or pseudo variable.
-    """
-
-    if "AWS::" in var_name:
-        pseudo = var_name.replace("AWS::", "")
-
-        # Can't treat region like a normal pseduo because
-        # we don't want to update the class var for every run.
-        if pseudo == "Region":
-            return template["Metadata"]["Cloud-Radar"]["Region"]
-        try:
-            return getattr(Template, pseudo)
-        except AttributeError:
-            raise ValueError(f"Unrecognized AWS Pseduo variable: '{var_name}'.")
-
-    if var_name in template["Parameters"]:
-        return template["Parameters"][var_name]["Value"]
-    else:
-        return var_name
-
-
-def r_sub(template: Dict, function: str) -> str:
-    """Solves AWS Sub intrinsic functions.
-
-    Args:
-        function (str): A string with ${} parameters or resources referenced in the template.
-
-    Returns:
-        str: Returns the rendered string.
-    """  # noqa: B950
-
-    def replace_var(m):
-        var = m.group(2)
-        return r_ref(template, var)
-
-    reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
-
-    if re.search(reVar, function):
-        return re.sub(reVar, replace_var, function).replace("${!", "${")
-
-    return function.replace("${!", "${")
