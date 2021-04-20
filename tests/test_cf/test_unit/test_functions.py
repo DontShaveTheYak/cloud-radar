@@ -205,6 +205,27 @@ def test_or(fake_t):
     assert result is False
 
 
+def test_condition():
+
+    template = {"Conditions": {"test": False}}
+
+    template = Template(template)
+
+    with pytest.raises(TypeError) as e:
+        result = functions.condition(template, [])
+
+    assert "String, not list." in str(e)
+
+    with pytest.raises(KeyError) as e:
+        result = functions.condition(template, "Fake")
+
+    assert "Unable to find condition" in str(e)
+
+    result = functions.condition(template, "test")
+
+    assert result is False
+
+
 def test_find_in_map():
     template = {}
 

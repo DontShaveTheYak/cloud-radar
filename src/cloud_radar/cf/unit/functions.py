@@ -12,10 +12,10 @@ from typing import Any, Dict, List, TYPE_CHECKING
 
 import requests
 
-REGION_DATA = None
-
 if TYPE_CHECKING:
     from ._template import Template
+
+REGION_DATA = None
 
 
 def base64(_t: "Template", value: Any) -> str:
@@ -242,6 +242,34 @@ def or_(_t: "Template", values: Any) -> bool:
         raise ValueError("Fn::Not - The values must have between 2 and 10 conditions.")
 
     return any(values)
+
+
+def condition(template: "Template", name: Any) -> bool:
+    """Solves AWS Condition function.
+
+    Args:
+        template (Template): The template being tested.
+        name (Any): The name of the condition.
+
+    Raises:
+        TypeError: If name is not a String.
+        KeyError: If name not found in template conditions.
+
+    Returns:
+        bool: The value of the condition.
+    """
+
+    if not isinstance(name, str):
+        raise TypeError(
+            f"Fn::Condition - The value must be a String, not {type(name).__name__}."
+        )
+
+    if name not in template.template["Conditions"]:
+        raise KeyError(
+            f"Fn::Condition - Unable to find condition '{name}' in template."
+        )
+
+    return template.template["Conditions"][name]
 
 
 def find_in_map(template: "Template", values: Any) -> Any:
