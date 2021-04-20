@@ -268,13 +268,14 @@ A real functional testing example using Pytest can be seen [here](./tests/test_c
 - Easier to pick regions for testing
 
 ### Unit
-- Implement all AWS [intrinsic functions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference.html).
-  * Only `!Ref`, `!Sub`, `!Equals` and `!If` currently supported.
 - Add full functionality to pseudo variables.
   * Variables like `Partition`, `URLSuffix` should change if the region changes.
   * Variables like `StackName` and `StackId` should have a better default than ""
 - Handle References to resources that shouldn't exist.
   * It's currently possible that a `!Ref` to a Resource stays in the final template even if that resource is later removed because of a conditional.
+- Handle function order
+  * Some functions restrict which functions can be nested in [them](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-conditions.html#w2ab1c33c28c21c45).
+  * Some functions are only allowed in [certain parts](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-conditions.html) of the template.
 
 ### Functional
 - Add the ability to update a stack instance to Taskcat.
