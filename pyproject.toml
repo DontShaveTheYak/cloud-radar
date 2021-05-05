@@ -27,7 +27,7 @@ cfn-flip = "^1.2.3"
 pytest = "^6.2.4"
 coverage = {extras = ["toml"], version = "^5.3"}
 pytest-cov = "^2.10.1"
-pytest-mock = "^3.3.1"
+pytest-mock = "^3.6.0"
 black = "^21.5b0"
 flake8 = "^3.9.1"
 flake8-black = "^0.2.1"
