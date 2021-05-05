@@ -712,8 +712,11 @@ def ref(template: "Template", var_name: str) -> Any:
 
     if var_name in template.template["Parameters"]:
         return template.template["Parameters"][var_name]["Value"]
-    else:
+
+    if var_name in template.template["Resources"]:
         return var_name
+
+    raise Exception(f"Fn::Ref - {var_name} is not a valid Resource or Parameter.")
 
 
 def get_region_azs(region_name: str) -> List[str]:
@@ -764,9 +767,11 @@ CONDITIONS: Dispatch = {
     "Fn::If": if_,
     "Fn::Not": not_,
     "Fn::Or": or_,
+    "Fn::Condition": condition,
 }
 
 INTRINSICS: Dispatch = {
+    "Fn::If": if_,  # Conditional function but is allowed here
     "Fn::Base64": base64,
     "Fn::Cidr": cidr,
     "Fn::FindInMap": find_in_map,
@@ -808,6 +813,7 @@ ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
     },
     "Fn::Not": ALLOWED_NESTED_CONDITIONS,
     "Fn::Or": ALLOWED_NESTED_CONDITIONS,
+    "Fn::Condition": {},  # Only allows strings
     "Fn::Base64": ALL_FUNCTIONS,
     "Fn::Cidr": {
         "Fn::Select": select,

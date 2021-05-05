@@ -97,10 +97,28 @@ def test_render_false():
     assert not result["Conditions"]["Bar"], "Condition should be false."
 
 
+def test_render_invalid_ref():
+    t = {
+        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
+        "Resources": {
+            "Foo": {"Condition": "Bar", "Properties": {"Name": {"Ref": "FAKE!"}}}
+        },
+    }
+
+    template = Template(t)
+
+    with pytest.raises(Exception) as ex:
+        _ = template.render()
+
+    assert "not a valid Resource" in str(ex)
+
+
 def test_resolve():
     t = {
         "Parameters": {"Test": {"Value": "test"}},
         "Conditions": {"test": True},
+        "Resources": {},
     }
 
     template = Template(t)
@@ -109,9 +127,10 @@ def test_resolve():
 
     assert result == "test", "Should resolve the value from the template."
 
-    result = template.resolve_values({"Ref": "Test2"}, functions.ALL_FUNCTIONS)
+    with pytest.raises(Exception) as ex:
+        result = template.resolve_values({"Ref": "Test2"}, functions.ALL_FUNCTIONS)
 
-    assert result == "Test2", "Should return its self if not a parameter."
+    assert "not a valid Resource" in str(ex)
 
     result = template.resolve_values(
         {"level1": {"Fn::If": ["test", "True", "False"]}}, functions.ALL_FUNCTIONS
