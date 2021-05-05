@@ -3,6 +3,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
+from cloud_radar.cf.unit import functions
 from cloud_radar.cf.unit._template import (
     Template,
     add_metadata,
@@ -96,7 +97,60 @@ def test_render_false():
     assert not result["Conditions"]["Bar"], "Condition should be false."
 
 
+def test_render_invalid_ref():
+    t = {
+        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
+        "Resources": {
+            "Foo": {"Condition": "Bar", "Properties": {"Name": {"Ref": "FAKE!"}}}
+        },
+    }
+
+    template = Template(t)
+
+    with pytest.raises(Exception) as ex:
+        _ = template.render()
+
+    assert "not a valid Resource" in str(ex)
+
+
 def test_resolve():
+    t = {
+        "Parameters": {"Test": {"Value": "test"}},
+        "Conditions": {"test": True},
+        "Resources": {},
+    }
+
+    template = Template(t)
+
+    result = template.resolve_values({"Ref": "Test"}, functions.ALL_FUNCTIONS)
+
+    assert result == "test", "Should resolve the value from the template."
+
+    with pytest.raises(Exception) as ex:
+        result = template.resolve_values({"Ref": "Test2"}, functions.ALL_FUNCTIONS)
+
+    assert "not a valid Resource" in str(ex)
+
+    result = template.resolve_values(
+        {"level1": {"Fn::If": ["test", "True", "False"]}}, functions.ALL_FUNCTIONS
+    )
+
+    assert result == {"level1": "True"}, "Should resolve nested dicts."
+
+    result = template.resolve_values(
+        [{"level1": {"Fn::If": ["test", "True", "False"]}}], functions.ALL_FUNCTIONS
+    )
+
+    assert result == [{"level1": "True"}], "Should resolve nested lists."
+
+    result = template.resolve_values("test", functions.ALL_FUNCTIONS)
+
+    assert result == "test", "Should return regular strings."
+
+
+def test_function_order():
+
     t = {
         "Parameters": {"Test": {"Value": "test"}},
         "Conditions": {"test": True},
@@ -104,27 +158,26 @@ def test_resolve():
 
     template = Template(t)
 
-    result = template.resolve_values({"Ref": "Test"})
+    test_if = {
+        "Fn::Cidr": {
+            "Fn::If": "select",
+        }
+    }
 
-    assert result == "test", "Should resolve the value from the template."
+    with pytest.raises(ValueError) as ex:
+        _ = template.resolve_values(test_if, functions.ALL_FUNCTIONS)
 
-    result = template.resolve_values({"Ref": "Test2"})
+    assert "Fn::If not allowed here." in str(ex)
 
-    assert result == "Test2", "Should return its self if not a parameter."
+    with pytest.raises(ValueError) as ex:
+        _ = template.resolve_values({"Fn::Base64": ""}, functions.CONDITIONS)
 
-    result = template.resolve_values({"level1": {"Fn::If": ["test", "True", "False"]}})
+    assert "Fn::Base64 not allowed here." in str(ex)
 
-    assert result == {"level1": "True"}, "Should resolve nested dicts."
+    with pytest.raises(ValueError) as ex:
+        _ = template.resolve_values({"Fn::Not": ""}, functions.INTRINSICS)
 
-    result = template.resolve_values(
-        [{"level1": {"Fn::If": ["test", "True", "False"]}}]
-    )
-
-    assert result == [{"level1": "True"}], "Should resolve nested lists."
-
-    result = template.resolve_values("test")
-
-    assert result == "test", "Should return regular strings."
+    assert "Fn::Not not allowed here." in str(ex)
 
 
 def test_set_params():

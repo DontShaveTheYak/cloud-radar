@@ -617,7 +617,7 @@ def test_transform(fake_t):
 
 def test_ref():
 
-    template = {"Parameters": {"foo": {"Value": "bar"}}}
+    template = {"Parameters": {"foo": {"Value": "bar"}}, "Resources": {}}
 
     add_metadata(template, Template.Region)
 
@@ -635,11 +635,10 @@ def test_ref():
 
     assert result == "bar", "Should reference parameters."
 
-    result = functions.ref(template, "SomeResource")
+    with pytest.raises(Exception) as ex:
+        result = functions.ref(template, "SomeResource")
 
-    assert (
-        result == "SomeResource"
-    ), "If not a psedo var or parameter it should return the input."
+    assert "not a valid Resource" in str(ex)
 
     fake = "AWS::FakeVar"
 

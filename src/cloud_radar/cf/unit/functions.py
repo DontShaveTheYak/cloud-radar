@@ -8,12 +8,14 @@ import base64 as b64
 import ipaddress
 import json
 import re
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, TYPE_CHECKING
 
 import requests
 
 if TYPE_CHECKING:
     from ._template import Template
+
+Dispatch = Dict[str, Callable[..., Any]]
 
 REGION_DATA = None
 
@@ -710,8 +712,11 @@ def ref(template: "Template", var_name: str) -> Any:
 
     if var_name in template.template["Parameters"]:
         return template.template["Parameters"][var_name]["Value"]
-    else:
+
+    if var_name in template.template["Resources"]:
         return var_name
+
+    raise Exception(f"Fn::Ref - {var_name} is not a valid Resource or Parameter.")
 
 
 def get_region_azs(region_name: str) -> List[str]:
@@ -754,3 +759,129 @@ def _fetch_region_data() -> List[dict]:
         r.raise_for_status()
 
     return json.loads(r.text)
+
+
+CONDITIONS: Dispatch = {
+    "Fn::And": and_,
+    "Fn::Equals": equals,
+    "Fn::If": if_,
+    "Fn::Not": not_,
+    "Fn::Or": or_,
+    "Fn::Condition": condition,
+}
+
+INTRINSICS: Dispatch = {
+    "Fn::If": if_,  # Conditional function but is allowed here
+    "Fn::Base64": base64,
+    "Fn::Cidr": cidr,
+    "Fn::FindInMap": find_in_map,
+    "Fn::GetAtt": get_att,
+    "Fn::GetAZs": get_azs,
+    "Fn::ImportValue": import_value,
+    "Fn::Join": join,
+    "Fn::Select": select,
+    "Fn::Split": split,
+    "Fn::Sub": sub,
+    "Fn::Transform": transform,
+    "Ref": ref,
+}
+
+ALL_FUNCTIONS: Dispatch = {
+    **CONDITIONS,
+    **INTRINSICS,
+}
+
+ALLOWED_NESTED_CONDITIONS: Dispatch = {
+    "Fn::FindInMap": find_in_map,
+    "Ref": ref,
+    **CONDITIONS,
+}
+
+ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
+    "Fn::And": ALLOWED_NESTED_CONDITIONS,
+    "Fn::Equals": ALLOWED_NESTED_CONDITIONS,
+    "Fn::If": {
+        "Fn::Base64": base64,
+        "Fn::FindInMap": find_in_map,
+        "Fn::GetAtt": get_att,
+        "Fn::GetAZs": get_azs,
+        "Fn::If": if_,
+        "Fn::Join": join,
+        "Fn::Select": select,
+        "Fn::Sub": sub,
+        "Ref": ref,
+    },
+    "Fn::Not": ALLOWED_NESTED_CONDITIONS,
+    "Fn::Or": ALLOWED_NESTED_CONDITIONS,
+    "Fn::Condition": {},  # Only allows strings
+    "Fn::Base64": ALL_FUNCTIONS,
+    "Fn::Cidr": {
+        "Fn::Select": select,
+        "Ref": ref,
+    },
+    "Fn::FindInMap": {
+        "Fn::FindInMap": find_in_map,
+        "Ref": ref,
+    },
+    "Fn::GetAtt": {},  # This one is complicated =/
+    "Fn::GetAZs": {
+        "Ref": ref,
+    },
+    "Fn::ImportValue": {
+        "Fn::Base64": base64,
+        "Fn::FindInMap": find_in_map,
+        "Fn::If": if_,
+        "Fn::Join": join,
+        "Fn::Select": select,
+        "Fn::Split": split,
+        "Fn::Sub": sub,
+        "Ref": ref,
+    },  # Import value can't depend on resources (not implemented)
+    "Fn::Join": {
+        "Fn::Base64": base64,
+        "Fn::FindInMap": find_in_map,
+        "Fn::GetAtt": get_att,
+        "Fn::GetAZs": get_azs,
+        "Fn::If": if_,
+        "Fn::ImportValue": import_value,
+        "Fn::Join": join,
+        "Fn::Split": split,
+        "Fn::Select": select,
+        "Fn::Sub": sub,
+        "Ref": ref,
+    },
+    "Fn::Select": {
+        "Fn::FindInMap": find_in_map,
+        "Fn::GetAtt": get_att,
+        "Fn::GetAZs": get_azs,
+        "Fn::If": if_,
+        "Fn::Split": split,
+        "Ref": ref,
+    },
+    "Fn::Split": {
+        "Fn::Base64": base64,
+        "Fn::FindInMap": find_in_map,
+        "Fn::GetAtt": get_att,
+        "Fn::GetAZs": get_azs,
+        "Fn::If": if_,
+        "Fn::ImportValue": import_value,
+        "Fn::Join": join,
+        "Fn::Split": split,
+        "Fn::Select": select,
+        "Fn::Sub": sub,
+        "Ref": ref,
+    },
+    "Fn::Sub": {
+        "Fn::Base64": base64,
+        "Fn::FindInMap": find_in_map,
+        "Fn::GetAtt": get_att,
+        "Fn::GetAZs": get_azs,
+        "Fn::If": if_,
+        "Fn::ImportValue": import_value,
+        "Fn::Join": join,
+        "Fn::Select": select,
+        "Ref": ref,
+    },
+    "Fn::Transform": {},  # Transform isn't fully implemented
+    "Ref": {},  # String only.
+}

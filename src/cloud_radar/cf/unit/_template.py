@@ -107,7 +107,7 @@ class Template:
 
         add_metadata(self.template, self.Region)
 
-        self.resolve_values(self.template)
+        self.resolve_values(self.template, functions.ALL_FUNCTIONS)
 
         resources = self.template["Resources"]
         for r_name, r_value in list(resources.items()):
@@ -120,7 +120,7 @@ class Template:
 
         return self.template
 
-    def resolve_values(self, data: Any) -> Any:
+    def resolve_values(self, data: Any, allowed_func: functions.Dispatch) -> Any:
         """Recurses through a Cloudformation template. Solving all
         references and variables along the way.
 
@@ -131,31 +131,26 @@ class Template:
             Any: Return the rendered data structure.
         """
 
-        aws_functions: Dict[str, IntrinsicFunc] = {
-            "Ref": functions.ref,
-            "Fn::Equals": functions.equals,
-            "Fn::If": functions.if_,
-            "Fn::Sub": functions.sub,
-            "Fn::Join": functions.join,
-            "Fn::Base64": functions.base64,
-            "Fn::Cidr": functions.cidr,
-        }
-
         if isinstance(data, dict):
             for key, value in data.items():
 
                 if key == "Ref":
                     return functions.ref(self, value)
 
-                value = self.resolve_values(value)
+                if "Fn::" not in key:
+                    data[key] = self.resolve_values(value, allowed_func)
+                    continue
 
-                if key in aws_functions:
-                    return aws_functions[key](self, value)
+                if key not in allowed_func:
+                    raise ValueError(f"{key} not allowed here.")
 
-                data[key] = self.resolve_values(value)
+                value = self.resolve_values(value, functions.ALLOWED_FUNCTIONS[key])
+
+                return allowed_func[key](self, value)
+
             return data
         elif isinstance(data, list):
-            return [self.resolve_values(item) for item in data]
+            return [self.resolve_values(item, allowed_func) for item in data]
         else:
             return data
 
