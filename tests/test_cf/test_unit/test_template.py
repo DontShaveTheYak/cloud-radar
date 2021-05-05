@@ -3,6 +3,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
+from cloud_radar.cf.unit import functions
 from cloud_radar.cf.unit._template import (
     Template,
     add_metadata,
@@ -104,27 +105,60 @@ def test_resolve():
 
     template = Template(t)
 
-    result = template.resolve_values({"Ref": "Test"})
+    result = template.resolve_values({"Ref": "Test"}, functions.ALL_FUNCTIONS)
 
     assert result == "test", "Should resolve the value from the template."
 
-    result = template.resolve_values({"Ref": "Test2"})
+    result = template.resolve_values({"Ref": "Test2"}, functions.ALL_FUNCTIONS)
 
     assert result == "Test2", "Should return its self if not a parameter."
 
-    result = template.resolve_values({"level1": {"Fn::If": ["test", "True", "False"]}})
+    result = template.resolve_values(
+        {"level1": {"Fn::If": ["test", "True", "False"]}}, functions.ALL_FUNCTIONS
+    )
 
     assert result == {"level1": "True"}, "Should resolve nested dicts."
 
     result = template.resolve_values(
-        [{"level1": {"Fn::If": ["test", "True", "False"]}}]
+        [{"level1": {"Fn::If": ["test", "True", "False"]}}], functions.ALL_FUNCTIONS
     )
 
     assert result == [{"level1": "True"}], "Should resolve nested lists."
 
-    result = template.resolve_values("test")
+    result = template.resolve_values("test", functions.ALL_FUNCTIONS)
 
     assert result == "test", "Should return regular strings."
+
+
+def test_function_order():
+
+    t = {
+        "Parameters": {"Test": {"Value": "test"}},
+        "Conditions": {"test": True},
+    }
+
+    template = Template(t)
+
+    test_if = {
+        "Fn::Cidr": {
+            "Fn::If": "select",
+        }
+    }
+
+    with pytest.raises(ValueError) as ex:
+        _ = template.resolve_values(test_if, functions.ALL_FUNCTIONS)
+
+    assert "Fn::If not allowed here." in str(ex)
+
+    with pytest.raises(ValueError) as ex:
+        _ = template.resolve_values({"Fn::Base64": ""}, functions.CONDITIONS)
+
+    assert "Fn::Base64 not allowed here." in str(ex)
+
+    with pytest.raises(ValueError) as ex:
+        _ = template.resolve_values({"Fn::Not": ""}, functions.INTRINSICS)
+
+    assert "Fn::Not not allowed here." in str(ex)
 
 
 def test_set_params():
