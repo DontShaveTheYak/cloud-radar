@@ -54,7 +54,7 @@ python-versions = "*"
 
 [[package]]
 name = "black"
-version = "21.5b0"
+version = "21.5b1"
 description = "The uncompromising code formatter."
 category = "dev"
 optional = false
@@ -70,7 +70,7 @@ toml = ">=0.10.1"
 
 [package.extras]
 colorama = ["colorama (>=0.4.3)"]
-d = ["aiohttp (>=3.3.2)", "aiohttp-cors"]
+d = ["aiohttp (>=3.6.0)", "aiohttp-cors"]
 python2 = ["typed-ast (>=1.4.2)"]
 
 [[package]]
@@ -773,7 +773,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "491b129ddf7838d778a38e1c35e346abf9f8fa052309b15ef0ea16d919edf442"
+content-hash = "ac1a3862ee8e0e4328ff52345f1b6393598eae0f797974a563d5fd05124a7833"
 
 [metadata.files]
 appdirs = [
@@ -798,8 +798,8 @@ aws-sam-translator = [
     {file = "backports.shutil_get_terminal_size-1.0.0.tar.gz", hash = "sha256:713e7a8228ae80341c70586d1cc0a8caa5207346927e23d09dcbcaf18eadec80"},
 ]
 black = [
-    {file = "black-21.5b0-py3-none-any.whl", hash = "sha256:0e80435b8a88f383c9149ae89d671eb2095b72344b0fe8a1d61d2ff5110ed173"},
-    {file = "black-21.5b0.tar.gz", hash = "sha256:9dc2042018ca10735366d944c2c12d9cad6dec74a3d5f679d09384ea185d9943"},
+    {file = "black-21.5b1-py3-none-any.whl", hash = "sha256:8a60071a0043876a4ae96e6c69bd3a127dad2c1ca7c8083573eb82f92705d008"},
+    {file = "black-21.5b1.tar.gz", hash = "sha256:23695358dbcb3deafe7f0a3ad89feee5999a46be5fec21f4f1d108be0bcdb3b1"},
 ]
 boto3 = [
     {file = "boto3-1.17.44-py2.py3-none-any.whl", hash = "sha256:e74da1da74fbefbe2db7a9c53082018d862433f35e2ecd4c173632efc5742f40"},
