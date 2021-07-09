@@ -236,33 +236,3 @@ def test_metadata(t):
     assert "Metadata" in t
 
     assert region == t["Metadata"]["Cloud-Radar"]["Region"]
-
-
-def test_log_defaults(template):
-
-    result = template.render({"BucketPrefix": "testing"})
-
-    assert "LogsBucket" in result["Resources"]
-
-    bucket_name = result["Resources"]["LogsBucket"]["Properties"]["BucketName"]
-
-    assert "us-east-1" in bucket_name
-
-
-def test_log_retain(template):
-
-    result = template.render(
-        {"BucketPrefix": "testing", "KeepBucket": "TRUE"}, region="us-west-2"
-    )
-
-    assert "LogsBucket" not in result["Resources"]
-
-    bucket = result["Resources"]["RetainLogsBucket"]
-
-    assert "DeletionPolicy" in bucket
-
-    assert bucket["DeletionPolicy"] == "Retain"
-
-    bucket_name = bucket["Properties"]["BucketName"]
-
-    assert "us-west-2" in bucket_name
