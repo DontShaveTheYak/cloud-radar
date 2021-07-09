@@ -36,6 +36,8 @@
     <a href="https://github.com/DontShaveTheYak/cloud-radar/issues">Report Bug</a>
     ·
     <a href="https://github.com/DontShaveTheYak/cloud-radar/issues">Request Feature</a>
+    ·
+    <a href="https://la-tech.co/post/hypermodern-cloudformation/getting-started/">Guide</a>
   </p>
 </p>
 
