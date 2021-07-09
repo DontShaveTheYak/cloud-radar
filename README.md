@@ -118,7 +118,7 @@ Cloud-Radar requires python >= 3.8
 
 ## Usage
 <details>
-<summary>Unit Testing</summary>
+<summary>Unit Testing <span style='font-size: .67em'>(Click to expand)</span></summary>
 
 Using Cloud-Radar starts by importing it into your test file or framework. We will use this [Template](./tests/templates/log_bucket/log_bucket.yaml) as an example.
 
@@ -175,7 +175,7 @@ A real unit testing example using Pytest can be seen [here](./tests/test_cf/test
 </details>
 
 <details>
-<summary>Functional Testing</summary>
+<summary>Functional Testing <span style='font-size: .67em'>(Click to expand)</span></summary>
 Using Cloud-Radar starts by importing it into your test file or framework.
 
 ```python
