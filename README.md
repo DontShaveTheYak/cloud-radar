@@ -36,6 +36,8 @@
     <a href="https://github.com/DontShaveTheYak/cloud-radar/issues">Report Bug</a>
     ·
     <a href="https://github.com/DontShaveTheYak/cloud-radar/issues">Request Feature</a>
+    ·
+    <a href="https://la-tech.co/post/hypermodern-cloudformation/getting-started/">Guide</a>
   </p>
 </p>
 
@@ -118,7 +120,7 @@ Cloud-Radar requires python >= 3.8
 
 ## Usage
 <details>
-<summary>Unit Testing</summary>
+<summary>Unit Testing <span style='font-size: .67em'>(Click to expand)</span></summary>
 
 Using Cloud-Radar starts by importing it into your test file or framework. We will use this [Template](./tests/templates/log_bucket/log_bucket.yaml) as an example.
 
@@ -170,12 +172,12 @@ The default values for psedo variables:
 | **URLSuffix**    | "amazonaws.com" |
 _Note: Bold variables are not fully impletmented yet see the [Roadmap](#roadmap)_
 
-A real unit testing example using Pytest can be seen [here](./tests/test_cf/test_unit/test_template.py)
+A real unit testing example using Pytest can be seen [here](./tests/test_cf/test_examples/test_unit.py)
 
 </details>
 
 <details>
-<summary>Functional Testing</summary>
+<summary>Functional Testing <span style='font-size: .67em'>(Click to expand)</span></summary>
 Using Cloud-Radar starts by importing it into your test file or framework.
 
 ```python
@@ -253,7 +255,7 @@ class TestLogBucket(unittest.TestCase):
 
 All the properties and methods of a [stack instance](https://github.com/aws-quickstart/taskcat/blob/main/taskcat/_cfn/stack.py#L188).
 
-A real functional testing example using Pytest can be seen [here](./tests/test_cf/test_e2e/test_stack.py)
+A real functional testing example using Pytest can be seen [here](./tests/test_cf/test_examples/test_functional.py)
 
 </details>
 
