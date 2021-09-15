@@ -695,7 +695,7 @@ widechars = ["wcwidth"]
 
 [[package]]
 name = "taskcat"
-version = "0.9.23"
+version = "0.9.25"
 description = "An OpenSource Cloudformation Deployment Framework"
 category = "main"
 optional = false
@@ -1237,7 +1237,7 @@ tabulate = [
     {file = "tabulate-0.8.9.tar.gz", hash = "sha256:eb1d13f25760052e8931f2ef80aaf6045a6cceb47514db8beab24cded16f13a7"},
 ]
 taskcat = [
-    {file = "taskcat-0.9.23.tar.gz", hash = "sha256:bcada35b33c70050529238d1d92c280f1fe24e597f7a81f385256e2cb4932d18"},
+    {file = "taskcat-0.9.25.tar.gz", hash = "sha256:0c14fc01d982d05c7a50322496ac4195b01106816f6aa128c456c3764ab5b27f"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
