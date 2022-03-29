@@ -28,7 +28,7 @@ pytest = "^6.2.4"
 coverage = {extras = ["toml"], version = "^5.3"}
 pytest-cov = "^2.12.1"
 pytest-mock = "^3.6.1"
-black = "^21.7b0"
+black = "^22.3"
 flake8 = "^3.9.2"
 flake8-black = "^0.2.3"
 flake8-import-order = "^0.18.1"
