@@ -1,7 +1,7 @@
 name: Release
 
-# We only want a single release to happen at a time. 
-concurrency: release 
+# We only want a single release to happen at a time.
+concurrency: release
 
 on:
   pull_request:
