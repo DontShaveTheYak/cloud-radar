@@ -15,7 +15,7 @@ jobs:
     name: Pre-commit
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2.4.2
+        uses: actions/checkout@v3.0.2
 
       - name: Setup Latest Python
         uses: actions/setup-python@v2.3.2
@@ -52,7 +52,7 @@ jobs:
     name: Python ${{ matrix.python-version }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2.4.2
+        uses: actions/checkout@v3.0.2
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2.3.2
