@@ -34,7 +34,7 @@ def coverage(session):
 @nox.session(python=["3.9", "3.8"])
 def tests(session):
     args = session.posargs or ["--cov", "-m", "not e2e"]
-    session.run("poetry", "install", "--no-dev", external=True)
+    session.run("poetry", "install", "--only", "main", external=True)
     install_with_constraints(
         session,
     )
