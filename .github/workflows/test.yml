@@ -25,7 +25,7 @@ jobs:
 
       - name: Setup Poetry
         run: |
-          pip install poetry==1.1.4
+          pip install poetry==1.2.1
           poetry install
 
       - name: Setup Coverage
@@ -64,7 +64,7 @@ jobs:
         run: pip install nox==2020.8.22
 
       - name: Setup Poetry
-        run: pip install poetry==1.1.4
+        run: pip install poetry==1.2.1
 
       - name: Run Tests
         run: nox
