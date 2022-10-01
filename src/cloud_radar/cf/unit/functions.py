@@ -271,7 +271,14 @@ def condition(template: "Template", name: Any) -> bool:
             f"Fn::Condition - Unable to find condition '{name}' in template."
         )
 
-    return template.template["Conditions"][name]
+    condition_value = template.template["Conditions"][name]
+
+    if not isinstance(condition_value, bool):
+        condition_value: bool = template.resolve_values(  # type: ignore
+            condition_value, allowed_func=ALLOWED_NESTED_CONDITIONS
+        )
+
+    return condition_value
 
 
 def find_in_map(template: "Template", values: Any) -> Any:
@@ -771,7 +778,7 @@ CONDITIONS: Dispatch = {
     "Fn::If": if_,
     "Fn::Not": not_,
     "Fn::Or": or_,
-    "Fn::Condition": condition,
+    "Condition": condition,
 }
 
 INTRINSICS: Dispatch = {
@@ -817,7 +824,7 @@ ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
     },
     "Fn::Not": ALLOWED_NESTED_CONDITIONS,
     "Fn::Or": ALLOWED_NESTED_CONDITIONS,
-    "Fn::Condition": {},  # Only allows strings
+    "Condition": {},  # Only allows strings
     "Fn::Base64": ALL_FUNCTIONS,
     "Fn::Cidr": {
         "Fn::Select": select,
