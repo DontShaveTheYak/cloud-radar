@@ -33,7 +33,7 @@ flake8 = "^5.0.0"
 flake8-black = "^0.3.0"
 flake8-import-order = "^0.18.1"
 flake8-bugbear = "^22.0.0"
-mypy = "^0.812"
+mypy = "^0.981"
 codecov = "^2.1.10"
 
 [tool.coverage.paths]
