@@ -15,30 +15,30 @@ jobs:
     name: Pre-commit
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v3.0.2
 
       - name: Setup Latest Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v4.2.0
         with:
           python-version: 3.9
           architecture: x64
 
       - name: Setup Poetry
         run: |
-          pip install poetry==1.1.4
+          pip install poetry==1.2.1
           poetry install
 
       - name: Setup Coverage
         run: pip install coverage[toml]
 
       - name: Run Pre-commit
-        uses: pre-commit/action@v2.0.3
+        uses: pre-commit/action@v3.0.0
 
       - name: Convert Coverage
         run: coverage xml --fail-under=0
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.0.3
+        uses: codecov/codecov-action@v3.1.1
         with:
           flags: unit
           fail_ci_if_error: true
@@ -52,10 +52,10 @@ jobs:
     name: Python ${{ matrix.python-version }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v3.0.2
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v4.2.0
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
@@ -64,7 +64,7 @@ jobs:
         run: pip install nox==2020.8.22
 
       - name: Setup Poetry
-        run: pip install poetry==1.1.4
+        run: pip install poetry==1.2.1
 
       - name: Run Tests
         run: nox
