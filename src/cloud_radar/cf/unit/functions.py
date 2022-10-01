@@ -88,7 +88,7 @@ def cidr(_t: "Template", values: Any) -> List[str]:
     except Exception:
         raise Exception(
             f"!Cidr or Fn::Cidr unable to convert {ip_block} into {count} subnets of /{mask}"
-        )
+        ) from None
 
 
 def and_(_t: "Template", values: Any) -> bool:
@@ -512,7 +512,9 @@ def select(_t: "Template", values: Any) -> Any:
     try:
         return items[index]
     except IndexError:
-        raise IndexError("Fn::Select - List size is smaller than the Index given.")
+        raise IndexError(
+            "Fn::Select - List size is smaller than the Index given."
+        ) from None
 
 
 def split(_t: "Template", values: Any) -> List[str]:
@@ -708,7 +710,9 @@ def ref(template: "Template", var_name: str) -> Any:
         try:
             return getattr(template, pseudo)
         except AttributeError:
-            raise ValueError(f"Unrecognized AWS Pseduo variable: '{var_name}'.")
+            raise ValueError(
+                f"Unrecognized AWS Pseduo variable: '{var_name}'."
+            ) from None
 
     if var_name in template.template["Parameters"]:
         return template.template["Parameters"][var_name]["Value"]
