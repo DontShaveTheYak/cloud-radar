@@ -23,7 +23,7 @@ python = "^3.8"
 taskcat = "^0.9.20"
 cfn-flip = "^1.2.3"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
 coverage = {extras = ["toml"], version = "^6.4"}
 pytest-cov = "^4.0.0"
@@ -35,8 +35,6 @@ flake8-import-order = "^0.18.1"
 flake8-bugbear = "^22.0.0"
 mypy = "^0.981"
 codecov = "^2.1.10"
-
-[tool.poetry.group.dev.dependencies]
 types-requests = "^2.28.11"
 types-PyYAML = "^6.0.12"
 
