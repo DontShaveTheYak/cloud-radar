@@ -107,20 +107,32 @@ class Template:
 
         add_metadata(self.template, self.Region)
 
-        self.resolve_values(self.template, functions.ALL_FUNCTIONS)
+        if "Conditions" in self.template:
+            self.template["Conditions"] = self.resolve_values(
+                self.template["Conditions"], functions.CONDITIONS, solve_conditions=True
+            )
+
+        self.resolve_values(
+            self.template, functions.ALL_FUNCTIONS, solve_conditions=False
+        )
 
         resources = self.template["Resources"]
         for r_name, r_value in list(resources.items()):
-            if "Condition" in r_value:
-                condition = self.template["Conditions"][r_value["Condition"]]
 
-                if not condition:
-                    del self.template["Resources"][r_name]
-                    continue
+            if "Condition" not in r_value:
+                continue
+
+            keep_resource = r_value["Condition"]
+
+            if not keep_resource:
+                del self.template["Resources"][r_name]
+                continue
 
         return self.template
 
-    def resolve_values(self, data: Any, allowed_func: functions.Dispatch) -> Any:
+    def resolve_values(
+        self, data: Any, allowed_func: functions.Dispatch, solve_conditions=False
+    ) -> Any:
         """Recurses through a Cloudformation template. Solving all
         references and variables along the way.
 
@@ -137,20 +149,37 @@ class Template:
                 if key == "Ref":
                     return functions.ref(self, value)
 
+                if key == "Condition":
+
+                    if solve_conditions:
+                        return functions.condition(self, value)
+
+                    data[key] = functions.condition(self, value)
+                    continue
+
                 if "Fn::" not in key:
-                    data[key] = self.resolve_values(value, allowed_func)
+                    data[key] = self.resolve_values(
+                        value, allowed_func, solve_conditions
+                    )
                     continue
 
                 if key not in allowed_func:
                     raise ValueError(f"{key} not allowed here.")
 
-                value = self.resolve_values(value, functions.ALLOWED_FUNCTIONS[key])
+                value = self.resolve_values(
+                    value,
+                    functions.ALLOWED_FUNCTIONS[key],
+                    solve_conditions,
+                )
 
                 return allowed_func[key](self, value)
 
             return data
         elif isinstance(data, list):
-            return [self.resolve_values(item, allowed_func) for item in data]
+            return [
+                self.resolve_values(item, allowed_func, solve_conditions)
+                for item in data
+            ]
         else:
             return data
 
