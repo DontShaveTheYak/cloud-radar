@@ -167,17 +167,17 @@ def test_function_order():
     with pytest.raises(ValueError) as ex:
         _ = template.resolve_values(test_if, functions.ALL_FUNCTIONS)
 
-    assert "Fn::If not allowed here." in str(ex)
+    assert "Fn::If with value" in str(ex)
 
     with pytest.raises(ValueError) as ex:
         _ = template.resolve_values({"Fn::Base64": ""}, functions.CONDITIONS)
 
-    assert "Fn::Base64 not allowed here." in str(ex)
+    assert "Fn::Base64 with value" in str(ex)
 
     with pytest.raises(ValueError) as ex:
         _ = template.resolve_values({"Fn::Not": ""}, functions.INTRINSICS)
 
-    assert "Fn::Not not allowed here." in str(ex)
+    assert "Fn::Not with value" in str(ex)
 
 
 def test_set_params():

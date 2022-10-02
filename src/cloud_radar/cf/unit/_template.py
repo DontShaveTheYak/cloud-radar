@@ -164,7 +164,7 @@ class Template:
                     continue
 
                 if key not in allowed_func:
-                    raise ValueError(f"{key} not allowed here.")
+                    raise ValueError(f"{key} with value ({value}) not allowed here")
 
                 value = self.resolve_values(
                     value,

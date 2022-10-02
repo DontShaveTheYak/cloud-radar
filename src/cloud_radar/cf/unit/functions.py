@@ -821,6 +821,7 @@ ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
         "Fn::Select": select,
         "Fn::Sub": sub,
         "Ref": ref,
+        "Fn::ImportValue": import_value,
     },
     "Fn::Not": ALLOWED_NESTED_CONDITIONS,
     "Fn::Or": ALLOWED_NESTED_CONDITIONS,
@@ -892,6 +893,7 @@ ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
         "Fn::Join": join,
         "Fn::Select": select,
         "Ref": ref,
+        "Fn::Sub": sub,
     },
     "Fn::Transform": {},  # Transform isn't fully implemented
     "Ref": {},  # String only.
