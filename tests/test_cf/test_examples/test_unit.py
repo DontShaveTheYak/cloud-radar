@@ -42,3 +42,6 @@ def test_log_retain(template):
     bucket_name = bucket["Properties"]["BucketName"]
 
     assert "us-west-2" in bucket_name
+
+    assert result["Conditions"]["AlwaysTrue"] is True
+    assert isinstance(bucket["Condition"], bool)

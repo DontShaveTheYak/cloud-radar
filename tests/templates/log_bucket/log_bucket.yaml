@@ -19,6 +19,7 @@ Parameters:
 Conditions:
   RetainBucket: !Equals [ !Ref KeepBucket, "TRUE" ]
   DeleteBucket: !Equals [ !Ref KeepBucket, "FALSE" ]
+  AlwaysTrue: !Or [!Condition RetainBucket, !Condition DeleteBucket]
 
 Resources:
   LogsBucket:
