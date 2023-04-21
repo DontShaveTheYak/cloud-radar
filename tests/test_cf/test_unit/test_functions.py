@@ -646,3 +646,16 @@ def test_ref():
         functions.ref(template, fake)
 
     assert f"Unrecognized AWS Pseduo variable: '{fake}'." in str(e.value)
+
+
+def test_ref_resource():
+
+    template = {"Resources": {"Foo": {}}}
+
+    add_metadata(template, Template.Region)
+
+    template = Template(template)
+
+    result = functions.ref(template, "Foo")
+
+    assert result == "Foo"
