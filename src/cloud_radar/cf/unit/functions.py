@@ -721,8 +721,9 @@ def ref(template: "Template", var_name: str) -> Any:
                 f"Unrecognized AWS Pseduo variable: '{var_name}'."
             ) from None
 
-    if var_name in template.template["Parameters"]:
-        return template.template["Parameters"][var_name]["Value"]
+    if "Parameters" in template.template:
+        if var_name in template.template["Parameters"]:
+            return template.template["Parameters"][var_name]["Value"]
 
     if var_name in template.template["Resources"]:
         return var_name
