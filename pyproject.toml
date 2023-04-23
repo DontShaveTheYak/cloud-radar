@@ -25,7 +25,7 @@ cfn-flip = "^1.2.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
-coverage = {extras = ["toml"], version = "^6.4"}
+coverage = {extras = ["toml"], version = "^7.0.0"}
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.6.1"
 black = "^22.1.0"
