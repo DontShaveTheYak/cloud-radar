@@ -268,7 +268,7 @@ def condition(template: "Template", name: Any) -> bool:
 
     if name not in template.template["Conditions"]:
         raise KeyError(
-            f"Fn::Condition - Unable to find condition '{name}' in template."
+            f"Fn::Condition - Unable to find condition {name!r} in template."
         )
 
     condition_value = template.template["Conditions"][name]
@@ -718,7 +718,7 @@ def ref(template: "Template", var_name: str) -> Any:
             return getattr(template, pseudo)
         except AttributeError:
             raise ValueError(
-                f"Unrecognized AWS Pseduo variable: '{var_name}'."
+                f"Unrecognized AWS Pseduo variable: {var_name!r}."
             ) from None
 
     if "Parameters" in template.template:
