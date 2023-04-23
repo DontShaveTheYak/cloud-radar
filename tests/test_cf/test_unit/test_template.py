@@ -18,7 +18,6 @@ def template():
 
 
 def test_constructor(template: Template):
-
     with pytest.raises(TypeError) as e:
         Template("not a dict")  # type: ignore
 
@@ -150,7 +149,6 @@ def test_resolve():
 
 
 def test_function_order():
-
     t = {
         "Parameters": {"Test": {"Value": "test"}},
         "Conditions": {"test": True},
