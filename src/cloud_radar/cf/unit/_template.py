@@ -85,7 +85,7 @@ class Template:
         return cls(template, imports)
 
     def render(
-        self, params: Dict[str, str] = None, region: Union[str, None] = None
+        self, params: Optional[Dict[str, str]] = None, region: Optional[str] = None
     ) -> dict:
         """Solves all conditionals, references and pseudo variables using
         the passed in parameters. After rendering the template all resources
