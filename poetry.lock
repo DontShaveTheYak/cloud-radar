@@ -423,14 +423,14 @@ develop = ["build", "twine"]
 
 [[package]]
 name = "flake8-bugbear"
-version = "22.12.6"
+version = "23.3.12"
 description = "A plugin for flake8 finding likely bugs and design problems in your program. Contains warnings that don't belong in pyflakes and pycodestyle."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "flake8-bugbear-22.12.6.tar.gz", hash = "sha256:4cdb2c06e229971104443ae293e75e64c6107798229202fbe4f4091427a30ac0"},
-    {file = "flake8_bugbear-22.12.6-py3-none-any.whl", hash = "sha256:b69a510634f8a9c298dfda2b18a8036455e6b19ecac4fe582e4d7a0abfa50a30"},
+    {file = "flake8-bugbear-23.3.12.tar.gz", hash = "sha256:e3e7f74c8a49ad3794a7183353026dabd68c74030d5f46571f84c1fb0eb79363"},
+    {file = "flake8_bugbear-23.3.12-py3-none-any.whl", hash = "sha256:beb5c7efcd7ccc2039ef66a77bb8db925e7be3531ff1cb4d0b7030d0e2113d72"},
 ]
 
 [package.dependencies]
@@ -438,7 +438,7 @@ attrs = ">=19.2.0"
 flake8 = ">=3.0.0"
 
 [package.extras]
-dev = ["coverage", "hypothesis", "hypothesmith (>=0.2)", "pre-commit", "tox"]
+dev = ["coverage", "hypothesis", "hypothesmith (>=0.2)", "pre-commit", "pytest", "tox"]
 
 [[package]]
 name = "flake8-import-order"
@@ -1334,4 +1334,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "cc1c818ab3a74706fb47b76e27e8d4ffbbb5c9f73acb9f189881895b91f1132b"
+content-hash = "2f4d1e7835cbbe0b14bc59487cdffb3fbfc9c0a4ca17144e27eec46bd6e1d606"
