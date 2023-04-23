@@ -21,7 +21,6 @@ def default_params():
 
 
 def test_constructor(template_dir, default_params):
-
     template = template_dir / "log_bucket" / "log_bucket.yaml"
 
     stack = Stack(template)
@@ -48,7 +47,6 @@ def test_constructor(template_dir, default_params):
 
 
 def test_tc_config():
-
     # We have to go a second level down
     # because it looks two levels up for the function
     # name to avoid the init function
