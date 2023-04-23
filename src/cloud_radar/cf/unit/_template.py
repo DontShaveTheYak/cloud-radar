@@ -107,13 +107,9 @@ class Template:
 
         add_metadata(self.template, self.Region)
 
-        if "Conditions" in self.template:
-            self.template["Conditions"] = self.resolve_values(
-                self.template["Conditions"], functions.CONDITIONS, solve_conditions=True
-            )
-
         self.resolve_values(
-            self.template, functions.ALL_FUNCTIONS, solve_conditions=False
+            self.template,
+            functions.ALL_FUNCTIONS,
         )
 
         resources = self.template["Resources"]
@@ -130,7 +126,9 @@ class Template:
         return self.template
 
     def resolve_values(
-        self, data: Any, allowed_func: functions.Dispatch, solve_conditions=False
+        self,
+        data: Any,
+        allowed_func: functions.Dispatch,
     ) -> Any:
         """Recurses through a Cloudformation template. Solving all
         references and variables along the way.
@@ -147,16 +145,30 @@ class Template:
                 if key == "Ref":
                     return functions.ref(self, value)
 
-                if key == "Condition":
-                    if solve_conditions:
-                        return functions.condition(self, value)
-
-                    data[key] = functions.condition(self, value)
+                # This takes care of keys that not intrinsic functions,
+                #  except for the condition func
+                if "Fn::" not in key and key != "Condition":
+                    data[key] = self.resolve_values(
+                        value,
+                        allowed_func,
+                    )
                     continue
 
-                if "Fn::" not in key:
+                # Takes care of the tricky 'Condition' key
+                if key == "Condition":
+                    # This takes care of conditional resources
+                    if "Properties" in data:
+                        data[key] = functions.condition(self, value)
+                        continue
+
+                    # If it's an intrinsic func
+                    if is_condition_func(value):
+                        return functions.condition(self, value)
+
+                    # Normal key like in an IAM role
                     data[key] = self.resolve_values(
-                        value, allowed_func, solve_conditions
+                        value,
+                        allowed_func,
                     )
                     continue
 
@@ -166,7 +178,6 @@ class Template:
                 value = self.resolve_values(
                     value,
                     functions.ALLOWED_FUNCTIONS[key],
-                    solve_conditions,
                 )
 
                 return allowed_func[key](self, value)
@@ -174,7 +185,10 @@ class Template:
             return data
         elif isinstance(data, list):
             return [
-                self.resolve_values(item, allowed_func, solve_conditions)
+                self.resolve_values(
+                    item,
+                    allowed_func,
+                )
                 for item in data
             ]
         else:
@@ -237,3 +251,21 @@ def add_metadata(template: Dict, region: str) -> None:
         template["Metadata"] = {}
 
     template["Metadata"].update(metadata)
+
+
+# All the other Cloudformation intrinsic functions start with `Fn:` but for some reason
+# the Condition function does not. This can be problem because
+#  `Condition` is a valid key in an IAM policy but its value is always a Map.
+def is_condition_func(value: Any) -> bool:
+    """Checks if the 'Condition' key is a instrinsic function.
+
+    Args:
+        value (Any): The value of the 'Condition' key.
+
+    Returns:
+        bool: True if we think this `Condition` key is an instrinsic function.
+    """
+    if isinstance(value, str):
+        return True
+
+    return False
