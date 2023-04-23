@@ -15,7 +15,6 @@ def template():
 
 
 def test_log_defaults(template):
-
     result = template.render({"BucketPrefix": "testing"})
 
     assert "LogsBucket" in result["Resources"]
@@ -26,7 +25,6 @@ def test_log_defaults(template):
 
 
 def test_log_retain(template):
-
     result = template.render(
         {"BucketPrefix": "testing", "KeepBucket": "TRUE"}, region="us-west-2"
     )

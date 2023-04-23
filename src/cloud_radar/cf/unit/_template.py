@@ -118,7 +118,6 @@ class Template:
 
         resources = self.template["Resources"]
         for r_name, r_value in list(resources.items()):
-
             if "Condition" not in r_value:
                 continue
 
@@ -145,12 +144,10 @@ class Template:
 
         if isinstance(data, dict):
             for key, value in data.items():
-
                 if key == "Ref":
                     return functions.ref(self, value)
 
                 if key == "Condition":
-
                     if solve_conditions:
                         return functions.condition(self, value)
 
