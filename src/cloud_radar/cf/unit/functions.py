@@ -809,9 +809,12 @@ ALLOWED_NESTED_CONDITIONS: Dispatch = {
     **CONDITIONS,
 }
 
+# Cloudformation only allows certain functions to be called from inside
+# other functions. The keys are the function name and the values are the
+# functions that are allowed to be nested inside it.
 ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
     "Fn::And": ALLOWED_NESTED_CONDITIONS,
-    "Fn::Equals": ALLOWED_NESTED_CONDITIONS,
+    "Fn::Equals": {**ALLOWED_NESTED_CONDITIONS, "Fn::Join": join, "Fn::Select": select},
     "Fn::If": {
         "Fn::Base64": base64,
         "Fn::FindInMap": find_in_map,
