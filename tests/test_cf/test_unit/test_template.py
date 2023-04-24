@@ -18,7 +18,6 @@ def template():
 
 
 def test_constructor(template: Template):
-
     with pytest.raises(TypeError) as e:
         Template("not a dict")  # type: ignore
 
@@ -54,7 +53,7 @@ def test_render_true():
     t = {
         "Parameters": {"testParam": {"Default": "Test Value"}},
         "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
-        "Resources": {"Foo": {"Condition": "Bar"}},
+        "Resources": {"Foo": {"Condition": "Bar", "Properties": {}}},
     }
 
     template = Template(t)
@@ -79,7 +78,7 @@ def test_render_false():
         "Parameters": {"testParam": {"Default": "Test Value"}},
         "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
         "Resources": {
-            "Foo": {"Condition": "Bar"},
+            "Foo": {"Condition": "Bar", "Properties": {}},
             "Foobar": {
                 "Properties": {"Something": {"Fn::Sub": "This is a ${testParam}"}}
             },
@@ -150,7 +149,6 @@ def test_resolve():
 
 
 def test_function_order():
-
     t = {
         "Parameters": {"Test": {"Value": "test"}},
         "Conditions": {"test": True},
@@ -236,3 +234,54 @@ def test_metadata(t):
     assert "Metadata" in t
 
     assert region == t["Metadata"]["Cloud-Radar"]["Region"]
+
+
+def test_render_condition_keys():
+    t = {
+        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Conditions": {
+            "Bar": {
+                "Fn::Equals": [
+                    {"Ref": "testParam"},
+                    "Test Value",
+                ]
+            },
+            "Foo": {
+                "Fn::Or": [
+                    {"Condition": "Bar"},
+                    False,
+                ]
+            },
+        },
+        "Resources": {
+            "Foo": {
+                "Condition": "Bar",
+                "Properties": {
+                    "NotFunction": {
+                        "Condition": {
+                            "IAM": "PolicyCondition!",
+                        },
+                    },
+                    "IsFunction": {
+                        "Condition": "Bar",
+                    },
+                },
+            },
+        },
+    }
+
+    template = Template(t)
+
+    result = template.render()
+
+    resource_props = result["Resources"]["Foo"]["Properties"]
+
+    assert isinstance(resource_props["NotFunction"]["Condition"], dict)
+
+    assert resource_props["IsFunction"] is True
+
+    assert result["Conditions"]["Foo"] is True
+
+    result = template.render({"testParam": "some value"})
+
+    assert result["Conditions"]["Foo"] is False

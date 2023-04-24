@@ -23,7 +23,8 @@
 		"ms-azuretools.vscode-docker",
 		"eamodio.gitlens",
 		"ms-python.python",
-		"njpwerner.autodocstring"
+		"njpwerner.autodocstring",
+		"ms-python.black-formatter"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],

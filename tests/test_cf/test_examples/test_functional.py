@@ -22,21 +22,17 @@ def default_params():
 
 @pytest.mark.e2e
 def test_log_bucket(template_dir, default_params):
-
     template = template_dir / "log_bucket" / "log_bucket.yaml"
 
     regions = ["us-west-1", "us-west-2"]
 
     with Stack(template, default_params, regions) as stacks:
-
         for stack in stacks:
-
             print(f"Testing {stack.name}")
 
             bucket_name = ""
 
             for output in stack.outputs:
-
                 if output.key == "LogsBucketName":
                     bucket_name = output.value
                     break
@@ -52,7 +48,6 @@ def test_log_bucket(template_dir, default_params):
 
 @pytest.mark.e2e
 def test_retain_bucket(template_dir, default_params):
-
     default_params["KeepBucket"] = "TRUE"
 
     template = template_dir / "log_bucket" / "log_bucket.yaml"
@@ -66,7 +61,6 @@ def test_retain_bucket(template_dir, default_params):
         s3 = session.resource("s3")
 
         for output in stack.outputs:
-
             if output.key == "LogsBucketName":
                 bucket = s3.Bucket(output.value)
                 bucket.wait_until_exists()

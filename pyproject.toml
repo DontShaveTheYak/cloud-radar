@@ -25,16 +25,15 @@ cfn-flip = "^1.2.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
-coverage = {extras = ["toml"], version = "^6.4"}
+coverage = {extras = ["toml"], version = "^7.0.0"}
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.6.1"
-black = "^22.1.0"
+black = "^23.0.0"
 flake8 = "^5.0.0"
 flake8-black = "^0.3.0"
 flake8-import-order = "^0.18.1"
-flake8-bugbear = "^22.0.0"
-mypy = "^0.981"
-codecov = "^2.1.10"
+flake8-bugbear = "^23.0.0"
+mypy = "^1.0.0"
 types-requests = "^2.28.11"
 types-PyYAML = "^6.0.12"
 

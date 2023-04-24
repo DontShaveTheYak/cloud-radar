@@ -268,7 +268,7 @@ def condition(template: "Template", name: Any) -> bool:
 
     if name not in template.template["Conditions"]:
         raise KeyError(
-            f"Fn::Condition - Unable to find condition '{name}' in template."
+            f"Fn::Condition - Unable to find condition {name!r} in template."
         )
 
     condition_value = template.template["Conditions"][name]
@@ -718,11 +718,12 @@ def ref(template: "Template", var_name: str) -> Any:
             return getattr(template, pseudo)
         except AttributeError:
             raise ValueError(
-                f"Unrecognized AWS Pseduo variable: '{var_name}'."
+                f"Unrecognized AWS Pseduo variable: {var_name!r}."
             ) from None
 
-    if var_name in template.template["Parameters"]:
-        return template.template["Parameters"][var_name]["Value"]
+    if "Parameters" in template.template:
+        if var_name in template.template["Parameters"]:
+            return template.template["Parameters"][var_name]["Value"]
 
     if var_name in template.template["Resources"]:
         return var_name
@@ -808,9 +809,12 @@ ALLOWED_NESTED_CONDITIONS: Dispatch = {
     **CONDITIONS,
 }
 
+# Cloudformation only allows certain functions to be called from inside
+# other functions. The keys are the function name and the values are the
+# functions that are allowed to be nested inside it.
 ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
     "Fn::And": ALLOWED_NESTED_CONDITIONS,
-    "Fn::Equals": ALLOWED_NESTED_CONDITIONS,
+    "Fn::Equals": {**ALLOWED_NESTED_CONDITIONS, "Fn::Join": join, "Fn::Select": select},
     "Fn::If": {
         "Fn::Base64": base64,
         "Fn::FindInMap": find_in_map,

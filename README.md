@@ -316,7 +316,7 @@ Levi - [@shady_cuz](https://twitter.com/shady_cuz)
 [python-shield]: https://img.shields.io/pypi/pyversions/cloud-radar?style=for-the-badge
 [version-shield]: https://img.shields.io/pypi/v/cloud-radar?label=latest&style=for-the-badge
 [pypi-url]: https://pypi.org/project/cloud-radar/
-[test-shield]: https://img.shields.io/github/workflow/status/DontShaveTheYak/cloud-radar/Tests?label=Tests&style=for-the-badge
+[test-shield]: https://img.shields.io/github/actions/workflow/status/DontShaveTheYak/cloud-radar/test.yml?label=Tests&style=for-the-badge
 [test-url]: https://github.com/DontShaveTheYak/cloud-radar/actions?query=workflow%3ATests+branch%3Amaster
 [codecov-shield]: https://img.shields.io/codecov/c/gh/DontShaveTheYak/cloud-radar?color=green&style=for-the-badge&token=NE5C92139X
 [codecov-url]: https://codecov.io/gh/DontShaveTheYak/cloud-radar

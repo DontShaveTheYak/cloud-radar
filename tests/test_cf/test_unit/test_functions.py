@@ -30,7 +30,6 @@ def test_base64(fake_t: Template):
 
 
 def test_cidr(fake_t: Template):
-
     with pytest.raises(TypeError) as e:
         result = functions.cidr(fake_t, {})
 
@@ -64,7 +63,6 @@ def test_cidr(fake_t: Template):
 
 
 def test_and(fake_t):
-
     with pytest.raises(TypeError) as e:
         result = functions.and_(fake_t, {})
 
@@ -119,7 +117,6 @@ def test_equals(fake_t: Template):
 
 
 def test_if(fake_t: Template):
-
     template = {"Conditions": {"test": False}}
 
     fake_t.template = template
@@ -149,13 +146,12 @@ def test_if(fake_t: Template):
 
     assert result == "true_value", "Should return the true value."
 
-    with pytest.raises(Exception):
+    with pytest.raises(TypeError):
         # First value should the name of the condition to lookup
         functions.if_(fake_t, [True, "True", "False"])
 
 
 def test_not(fake_t):
-
     with pytest.raises(TypeError) as e:
         result = functions.not_(fake_t, {})
 
@@ -176,7 +172,6 @@ def test_not(fake_t):
 
 
 def test_or(fake_t):
-
     with pytest.raises(TypeError) as e:
         result = functions.or_(fake_t, {})
 
@@ -206,7 +201,6 @@ def test_or(fake_t):
 
 
 def test_condition():
-
     template = {"Conditions": {"test": False}}
 
     template = Template(template)
@@ -285,7 +279,6 @@ def test_find_in_map():
 
 
 def test_get_att():
-
     template = {"Resources": {}}
 
     add_metadata(template, Template.Region)
@@ -325,7 +318,6 @@ def test_get_att():
 
 
 def test_get_az(fake_t: Template, mocker):
-
     mock_fetch = mocker.patch.object(functions, "get_region_azs")
     mock_fetch.return_value = ["us-east-1-az-1", "us-east-1-az-2"]
 
@@ -343,7 +335,6 @@ def test_get_az(fake_t: Template, mocker):
 
 
 def test_get_region_azs(mocker):
-
     region_name = "us-east-1"
 
     mocker.patch.object(functions, "REGION_DATA", None)
@@ -374,7 +365,6 @@ def test_get_region_azs(mocker):
 
 
 def test_fetch_region_data(mocker):
-
     mock_post = mocker.patch("cloud_radar.cf.unit.functions.requests.get")
     mock_json = mocker.patch("cloud_radar.cf.unit.functions.json.loads")
     mock_json.return_value = "TestData"
@@ -399,7 +389,6 @@ def test_fetch_region_data(mocker):
 
 
 def test_import_value():
-
     name = "TestImport"
     value = "TestValue"
 
@@ -432,7 +421,6 @@ def test_import_value():
 
 
 def test_join(fake_t: Template):
-
     value = [":", ["a", "b", "c"]]
 
     result = functions.join(fake_t, value)
@@ -462,7 +450,6 @@ def test_join(fake_t: Template):
 
 
 def test_select(fake_t):
-
     with pytest.raises(TypeError) as e:
         result = functions.select(fake_t, {})
 
@@ -489,7 +476,6 @@ def test_select(fake_t):
 
 
 def test_split(fake_t):
-
     with pytest.raises(TypeError) as e:
         result = functions.split(fake_t, {})
 
@@ -597,7 +583,6 @@ def test_sub_l():
 
 
 def test_transform(fake_t):
-
     with pytest.raises(TypeError) as e:
         result = functions.transform(fake_t, [])
 
@@ -616,7 +601,6 @@ def test_transform(fake_t):
 
 
 def test_ref():
-
     template = {"Parameters": {"foo": {"Value": "bar"}}, "Resources": {}}
 
     add_metadata(template, Template.Region)
@@ -645,4 +629,16 @@ def test_ref():
     with pytest.raises(ValueError) as e:
         functions.ref(template, fake)
 
-    assert f"Unrecognized AWS Pseduo variable: '{fake}'." in str(e.value)
+    assert f"Unrecognized AWS Pseduo variable: {fake!r}." in str(e.value)
+
+
+def test_ref_resource():
+    template = {"Resources": {"Foo": {}}}
+
+    add_metadata(template, Template.Region)
+
+    template = Template(template)
+
+    result = functions.ref(template, "Foo")
+
+    assert result == "Foo"
