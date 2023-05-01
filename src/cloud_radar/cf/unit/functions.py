@@ -393,10 +393,16 @@ def get_azs(_t: "Template", region: Any) -> List[str]:
         List[str]: The list of AZs for the provided region.
     """
 
+    if region is None:
+        region = _t.Region
+
     if not isinstance(region, str):
         raise TypeError(
             f"Fn::GetAZs - The region must be a String, not {type(region).__name__}."
         )
+
+    if region == "":
+        region = _t.Region
 
     return get_region_azs(region)
 
@@ -604,10 +610,22 @@ def sub_s(template: "Template", value: str) -> str:
     """
 
     def replace_var(m):
-        var = m.group(2)
-        return ref(template, var)
+        var = m.group(1)
 
-    reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
+        if "." in var:
+            parts = var.split(".")
+
+            resouce_id = parts[0]
+
+            attributes = ".".join(parts[1:])
+
+            result = get_att(template, [resouce_id, attributes])
+        else:
+            result = ref(template, var)
+
+        return result
+
+    reVar = r"(?!\$\{\!)\$\{(\w+[^}]*)\}"
 
     if re.search(reVar, value):
         return re.sub(reVar, replace_var, value).replace("${!", "${")
@@ -650,14 +668,25 @@ def sub_l(template: "Template", values: List) -> str:
         )
 
     def replace_var(m):
-        var = m.group(2)
+        var: str = m.group(1)
 
         if var in local_vars:
             return local_vars[var]
 
-        return ref(template, var)
+        if "." in var:
+            parts = var.split(".")
 
-    reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
+            resouce_id = parts[0]
+
+            attributes = ".".join(parts[1:])
+
+            result = get_att(template, [resouce_id, attributes])
+        else:
+            result = ref(template, var)
+
+        return result
+
+    reVar = r"(?!\$\{\!)\$\{(\w+[^}]*)\}"
 
     if re.search(reVar, source_string):
         return re.sub(reVar, replace_var, source_string).replace("${!", "${")
