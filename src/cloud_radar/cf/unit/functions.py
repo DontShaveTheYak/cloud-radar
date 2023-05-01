@@ -604,10 +604,22 @@ def sub_s(template: "Template", value: str) -> str:
     """
 
     def replace_var(m):
-        var = m.group(2)
-        return ref(template, var)
+        var = m.group(1)
 
-    reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
+        if "." in var:
+            parts = var.split(".")
+
+            resouce_id = parts[0]
+
+            attributes = ".".join(parts[1:])
+
+            result = get_att(template, [resouce_id, attributes])
+        else:
+            result = ref(template, var)
+
+        return result
+
+    reVar = r"(?!\$\{\!)\$\{(\w+[^}]*)\}"
 
     if re.search(reVar, value):
         return re.sub(reVar, replace_var, value).replace("${!", "${")
@@ -650,14 +662,25 @@ def sub_l(template: "Template", values: List) -> str:
         )
 
     def replace_var(m):
-        var = m.group(2)
+        var: str = m.group(1)
 
         if var in local_vars:
             return local_vars[var]
 
-        return ref(template, var)
+        if "." in var:
+            parts = var.split(".")
 
-    reVar = r"(?!\$\{\!)\$(\w+|\{([^}]*)\})"
+            resouce_id = parts[0]
+
+            attributes = ".".join(parts[1:])
+
+            result = get_att(template, [resouce_id, attributes])
+        else:
+            result = ref(template, var)
+
+        return result
+
+    reVar = r"(?!\$\{\!)\$\{(\w+[^}]*)\}"
 
     if re.search(reVar, source_string):
         return re.sub(reVar, replace_var, source_string).replace("${!", "${")
