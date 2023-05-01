@@ -334,6 +334,15 @@ def test_get_az(fake_t: Template, mocker):
         assert region in az
 
 
+def test_get_az_no_region(fake_t: Template, mocker):
+    mock_fetch = mocker.patch.object(functions, "get_region_azs")
+    mock_fetch.return_value = ["us-east-1-az-1", "us-east-1-az-2"]
+
+    functions.get_azs(fake_t, "")
+
+    functions.get_azs(fake_t, None)
+
+
 def test_get_region_azs(mocker):
     region_name = "us-east-1"
 

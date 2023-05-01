@@ -393,10 +393,16 @@ def get_azs(_t: "Template", region: Any) -> List[str]:
         List[str]: The list of AZs for the provided region.
     """
 
+    if region is None:
+        region = _t.Region
+
     if not isinstance(region, str):
         raise TypeError(
             f"Fn::GetAZs - The region must be a String, not {type(region).__name__}."
         )
+
+    if region == "":
+        region = _t.Region
 
     return get_region_azs(region)
 
