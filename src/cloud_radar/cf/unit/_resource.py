@@ -43,11 +43,11 @@ class Resource(UserDict):
             "Properties" in self.data
         ), f"Resource '{self.name}' has no 'Properties' attribute."
 
-    def get_properties_value(self) -> dict[str, Any]:
+    def get_properties_value(self) -> Dict[str, Any]:
         """Get the properties of the resource.
 
         Returns:
-            dict[str, Any]: The properties of the resource.
+            Dict[str, Any]: The properties of the resource.
         """
         self.has_properties()
 
