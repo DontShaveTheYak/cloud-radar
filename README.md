@@ -136,17 +136,17 @@ template = Template.from_yaml(template_path.resolve())
 params = {"BucketPrefix": "testing", "KeepBucket": "TRUE"}
 
 # parameters and region are optional arguments.
-result = template.render(params, region="us-west-2")
+stack = template.create_stack(params, region="us-west-2")
 
-assert "LogsBucket" not in result["Resources"]
+stack.no_resource("LogsBucket")
 
-bucket = result["Resources"]["RetainLogsBucket"]
+bucket = stack.get_resource("RetainLogsBucket")
 
 assert "DeletionPolicy" in bucket
 
 assert bucket["DeletionPolicy"] == "Retain"
 
-bucket_name = bucket["Properties"]["BucketName"]
+bucket_name = bucket.get_property_value("BucketName")
 
 assert "us-west-2" in bucket_name
 ```
