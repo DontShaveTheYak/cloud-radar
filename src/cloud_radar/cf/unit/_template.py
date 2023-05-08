@@ -8,6 +8,7 @@ from cfn_tools import dump_yaml, load_yaml  # type: ignore
 import yaml
 
 from . import functions
+from ._stack import Stack
 
 IntrinsicFunc = Callable[["Template", Any], Any]
 
@@ -124,6 +125,18 @@ class Template:
                 continue
 
         return self.template
+
+    def create_stack(
+        self, params: Optional[Dict[str, str]] = None, region: Optional[str] = None
+    ):
+        if region:
+            self.Region = region
+
+        self.render(params)
+
+        stack = Stack(self.template)
+
+        return stack
 
     def resolve_values(
         self,

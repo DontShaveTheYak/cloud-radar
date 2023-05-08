@@ -2,9 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from cloud_radar.cf.unit._template import (
-    Template,
-)
+from cloud_radar.cf.unit import Template
 
 
 @pytest.fixture
@@ -14,32 +12,37 @@ def template():
     return Template.from_yaml(template_path.resolve(), {})
 
 
-def test_log_defaults(template):
-    result = template.render({"BucketPrefix": "testing"})
+def test_log_defaults(template: Template):
+    stack = template.create_stack({"BucketPrefix": "testing"})
 
-    assert "LogsBucket" in result["Resources"]
+    stack.has_resource("LogsBucket")
 
-    bucket_name = result["Resources"]["LogsBucket"]["Properties"]["BucketName"]
+    stack.no_resource("RetainLogsBucket")
+
+    bucket = stack.get_resource("LogsBucket")
+
+    bucket_name = bucket.get_property_value("BucketName")
 
     assert "us-east-1" in bucket_name
 
 
-def test_log_retain(template):
-    result = template.render(
+def test_log_retain(template: Template):
+    stack = template.create_stack(
         {"BucketPrefix": "testing", "KeepBucket": "TRUE"}, region="us-west-2"
     )
 
-    assert "LogsBucket" not in result["Resources"]
+    stack.no_resource("LogsBucket")
 
-    bucket = result["Resources"]["RetainLogsBucket"]
+    bucket = stack.get_resource("RetainLogsBucket")
 
     assert "DeletionPolicy" in bucket
 
     assert bucket["DeletionPolicy"] == "Retain"
 
-    bucket_name = bucket["Properties"]["BucketName"]
+    bucket_name = bucket.get_property_value("BucketName")
 
     assert "us-west-2" in bucket_name
 
-    assert result["Conditions"]["AlwaysTrue"] is True
-    assert isinstance(bucket["Condition"], bool)
+    always_true = stack.get_condition("AlwaysTrue")
+
+    always_true.assert_value_is(True)
