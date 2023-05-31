@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
-from cfn_tools import dump_yaml, load_yaml  # type: ignore
-
-import yaml
+import yaml  # noqa: I100
+from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100
 
 from . import functions
 from ._stack import Stack
@@ -108,23 +107,67 @@ class Template:
 
         add_metadata(self.template, self.Region)
 
-        self.resolve_values(
-            self.template,
-            functions.ALL_FUNCTIONS,
-        )
+        self.template = self.render_all_sections(self.template)
 
-        resources = self.template["Resources"]
-        for r_name, r_value in list(resources.items()):
-            if "Condition" not in r_value:
-                continue
-
-            keep_resource = r_value["Condition"]
-
-            if not keep_resource:
-                del self.template["Resources"][r_name]
-                continue
+        self.template = self.remove_condtional_resources(self.template)
 
         return self.template
+
+    def render_all_sections(self, template: Dict[str, Any]) -> Dict[str, Any]:
+        """Solves all conditionals, references and pseudo variables for all sections"""
+        if "Conditions" in template:
+            template["Conditions"] = self.resolve_values(
+                template["Conditions"],
+                functions.ALL_FUNCTIONS,
+            )
+
+        template_sections = ["Resources", "Outputs"]
+
+        for section in template_sections:
+            if section not in template:
+                continue
+
+            for r_name, r_value in get_section_items(template, section):
+                if is_conditional(r_value):
+                    condition_value = get_condition_value(
+                        r_value["Condition"], template["Conditions"]
+                    )
+
+                    if not condition_value:
+                        continue
+
+                template[section][r_name] = self.resolve_values(
+                    r_value,
+                    functions.ALL_FUNCTIONS,
+                )
+
+        return template
+
+    def remove_condtional_resources(self, template: Dict[str, Any]) -> Dict[str, Any]:
+        """Removes all resources that have a condition that evaluates to False."""
+
+        # These are sections that can have conditional resources
+        conditional_sections = ["Resources", "Outputs"]
+
+        for section in conditional_sections:
+            if section not in template:
+                continue
+
+            resources = template[section]
+
+            for r_name, r_value in list(resources.items()):
+                if not is_conditional(r_value):
+                    continue
+
+                condition_value = get_condition_value(
+                    r_value["Condition"], template["Conditions"]
+                )
+
+                if not condition_value:
+                    del template[section][r_name]
+                    continue
+
+        return template
 
     def create_stack(
         self, params: Optional[Dict[str, str]] = None, region: Optional[str] = None
@@ -171,7 +214,7 @@ class Template:
                 if key == "Condition":
                     # This takes care of conditional resources
                     if "Properties" in data:
-                        data[key] = functions.condition(self, value)
+                        # data[key] = functions.condition(self, value)
                         continue
 
                     # If it's an intrinsic func
@@ -282,3 +325,32 @@ def is_condition_func(value: Any) -> bool:
         return True
 
     return False
+
+
+# Loop through a dictionary yielding the key and value
+def iter_dict(data: dict) -> Generator[Tuple[str, Any], None, None]:
+    for key, value in data.items():
+        yield key, value
+
+
+# return iter_dict for a given key in a dictionary
+def get_section_items(
+    data: dict, section: str
+) -> Generator[Tuple[str, Any], None, None]:
+    if section not in data:
+        return iter_dict({})
+
+    return iter_dict(data[section])
+
+
+# Check if a dictionary has a key "Condition"
+def is_conditional(data: dict) -> bool:
+    if "Condition" in data:
+        return True
+
+    return False
+
+
+# Return the conditional value of a resouce
+def get_condition_value(condition_name: str, conditions: Dict[str, bool]) -> bool:
+    return conditions[condition_name]

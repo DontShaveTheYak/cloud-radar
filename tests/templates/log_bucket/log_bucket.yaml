@@ -20,6 +20,7 @@ Conditions:
   RetainBucket: !Equals [ !Ref KeepBucket, "TRUE" ]
   DeleteBucket: !Equals [ !Ref KeepBucket, "FALSE" ]
   AlwaysTrue: !Or [!Condition RetainBucket, !Condition DeleteBucket]
+  AlwaysFalse: !Not [!Condition AlwaysTrue]
 
 Resources:
   LogsBucket:
@@ -36,6 +37,14 @@ Resources:
     Properties:
       BucketName:
         !Sub ${BucketPrefix}-logs-${AWS::Region}
+
+  # Used for testng
+  TestBucket:
+    Condition: AlwaysFalse
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        !Sub "${Foo}-logs-${AWS::Region}"
 
 Outputs:
   LogsBucketName:
