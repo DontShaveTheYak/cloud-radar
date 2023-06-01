@@ -102,6 +102,12 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     needs: [tag, publish]
+    permissions:
+      # write permission is required to create a github release
+      contents: write
+      # write permission is required for autolabeler
+      # otherwise, read permission is required at least
+      pull-requests: read
     steps:
       - name: Create Draft Release
         uses: release-drafter/release-drafter@v5.23.0
