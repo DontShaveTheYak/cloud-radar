@@ -19,7 +19,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8.1"
 taskcat = "^0.9.20"
 cfn-flip = "^1.2.3"
 
