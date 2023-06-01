@@ -4,4 +4,3 @@ select = B,B9,BLK,C,E,F,I,W
 ignore = E203,E501,W503,B907
 max-complexity = 10
 application-import-names = cloud_radar,tests
-import-order-style=google

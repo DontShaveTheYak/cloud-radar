@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
 import yaml  # noqa: I100
-from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100
+from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
 from . import functions
 from ._stack import Stack
