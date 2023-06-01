@@ -19,7 +19,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8.1"
 taskcat = "^0.9.20"
 cfn-flip = "^1.2.3"
 
@@ -29,7 +29,7 @@ coverage = {extras = ["toml"], version = "^7.0.0"}
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.6.1"
 black = "^23.0.0"
-flake8 = "^5.0.0"
+flake8 = "^6.0.0"
 flake8-black = "^0.3.0"
 flake8-import-order = "^0.18.1"
 flake8-bugbear = "^23.0.0"
