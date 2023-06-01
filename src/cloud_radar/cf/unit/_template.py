@@ -212,9 +212,12 @@ class Template:
 
                 # Takes care of the tricky 'Condition' key
                 if key == "Condition":
-                    # This takes care of conditional resources
-                    if "Properties" in data:
-                        # data[key] = functions.condition(self, value)
+                    # The real fix is to not resolve every key/value in the entire
+                    # cloudformation template. We should only attempt to resolve what is needed,
+                    # like outputs and resource properties.
+                    # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference.html
+
+                    if "Properties" in data or "Value" in data:
                         continue
 
                     # If it's an intrinsic func

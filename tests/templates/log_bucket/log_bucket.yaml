@@ -48,6 +48,7 @@ Resources:
 
 Outputs:
   LogsBucketName:
+    Condition: AlwaysTrue
     Description: Name of the logs bucket.
     Value: !If [RetainBucket, !Ref RetainLogsBucket, !Ref LogsBucket]
     Export:
