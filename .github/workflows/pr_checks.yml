@@ -7,10 +7,10 @@ on:
 jobs:
   label:
     name: Check Labels
+    if: github.base_ref != 'master' && github.head_ref != 'develop'
     runs-on: ubuntu-latest
     steps:
       - name: Has semver label
-        if: github.base_ref != 'master'
         uses: jesusvasquez333/verify-pr-label-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

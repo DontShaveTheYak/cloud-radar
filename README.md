@@ -262,11 +262,7 @@ A real functional testing example using Pytest can be seen [here](./tests/test_c
 ## Roadmap
 
 ### Project
-- Python 3.7 support
-- Add Logging
 - Add Logo
-- Make it easier to interact with stack resources.
-  * Getting a resource for testing should be as easy as `stack.Resources('MyResource)` or `template.Resources('MyResource')`
 - Easier to pick regions for testing
 
 ### Unit
@@ -275,8 +271,6 @@ A real functional testing example using Pytest can be seen [here](./tests/test_c
   * Variables like `StackName` and `StackId` should have a better default than ""
 - Handle References to resources that shouldn't exist.
   * It's currently possible that a `!Ref` to a Resource stays in the final template even if that resource is later removed because of a conditional.
-- Handle function order
-  * Some functions are only allowed in [certain parts](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-conditions.html) of the template.
 
 ### Functional
 - Add the ability to update a stack instance to Taskcat.
