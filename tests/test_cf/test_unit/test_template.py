@@ -319,7 +319,7 @@ def test_resolve_dynamic_references():
         }
     }
 
-    template = Template(t)
+    template = Template(t, dynamic_references=dynamic_references)
 
     result = template.render()
 
@@ -328,5 +328,5 @@ def test_resolve_dynamic_references():
     assert foo_resource_props["PolicyName"] == "mgt-cld-rdr-launch-role-pol"
 
     # This item resolves the SSM parameter after a substitution has been performed
-    bar_resource_props = result["Resources"]["Foo"]["Properties"]
+    bar_resource_props = result["Resources"]["Bar"]["Properties"]
     assert bar_resource_props["PolicyName"] == "mgt-cld-55-rdr-launch-role-pol"

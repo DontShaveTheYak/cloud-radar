@@ -262,7 +262,14 @@ class Template:
                     functions.ALLOWED_FUNCTIONS[key],
                 )
 
-                return allowed_func[key](self, value)
+                funct_result = allowed_func[key](self, value)
+
+                if isinstance(funct_result, str):
+                    # If the result is a string then process any
+                    # dynamic references first
+                    return self.resolve_dynamic_references(funct_result)
+
+                return funct_result
 
             return data
         elif isinstance(data, list):
@@ -294,8 +301,11 @@ class Template:
         """
 
         if "{{resolve:" in data:
-            print("For str may need to resolve SSM parameters: %s", data)
+            print("For str may need to resolve SSM parameters: ", data)
 
+            # The allowed values for the service and key regex are taken
+            # from the documentation for this feature in
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html#dynamic-references-pattern
             matches = re.search(
                 "{{(resolve:(ssm|ssm-secure|secretsmanager):[a-zA-Z0-9_.\-/]+(:\d+)?)}}",
                 data,
@@ -310,24 +320,26 @@ class Template:
 
                 if service not in self.dynamic_references:
                     raise KeyError(
-                        "Service %s not included in dynamic references configuration",
-                        service,
+                        f"Service {service} not included in dynamic references configuration"
                     )
                 if key not in self.dynamic_references[service]:
                     raise KeyError(
-                        "Key %s not included in dynamic references configuration for service %s",
-                        key,
-                        service,
+                        f"Key {key} not included in dynamic references configuration for service {service}"
                     )
 
+                print(f"{{{{resolve:{service}:{key}}}}}")
+                print(self.dynamic_references[service][key])
                 updated_value = data.replace(
-                    f"{{resolve:{service}:{key}}}",
+                    f"{{{{resolve:{service}:{key}}}}}",
                     self.dynamic_references[service][key],
                 )
 
                 # run the updated value through this function again to pick up any other references
                 return self.resolve_dynamic_references(updated_value)
-            else:
+            elif "${" not in data:
+                # If there is a "${" in the string it is likely we are meant to
+                # apply other functions to it before processing the result (like
+                # a Fn::Sub first to include an AWS account ID)
                 raise ValueError(
                     "Found '{{resolve' in string, but did not match expected regex - %s",
                     data,
