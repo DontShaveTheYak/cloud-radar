@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
@@ -27,7 +28,10 @@ class Template:
     URLSuffix: str = "amazonaws.com"  # Other regions not implemented
 
     def __init__(
-        self, template: Dict[str, Any], imports: Optional[Dict[str, str]] = None
+        self,
+        template: Dict[str, Any],
+        imports: Optional[Dict[str, str]] = None,
+        dynamic_references: Optional[Dict[str, Dict[str, str]]] = None,
     ) -> None:
         """Loads a Cloudformation template from a file and saves
         it as a dictionary.
@@ -36,14 +40,21 @@ class Template:
             template (Dict): The Cloudformation template as a dictionary.
             imports (Optional[Dict[str, str]], optional): Values this template plans
             to import from other stacks exports. Defaults to None.
+            dynamic_references (Optional[Dict[str, Dict[str, str]]], optional): Values
+            this template plans to dynamically lookup from ssm/secrets manager.
+            Defaults to None.
 
         Raises:
             TypeError: If template is not a dictionary.
             TypeError: If imports is not a dictionary.
+            TypeError: If dynamic_references is not a dictionary.
         """
 
         if imports is None:
             imports = {}
+
+        if dynamic_references is None:
+            dynamic_references = {}
 
         if not isinstance(template, dict):
             raise TypeError(
@@ -53,14 +64,23 @@ class Template:
         if not isinstance(imports, dict):
             raise TypeError(f"Imports should be a dict, not {type(imports).__name__}.")
 
+        if not isinstance(dynamic_references, dict):
+            raise TypeError(
+                f"Dynamic References should be a dict, not {type(dynamic_references).__name__}."
+            )
+
         self.raw: str = yaml.dump(template)
         self.template = template
         self.Region = Template.Region
         self.imports = imports
+        self.dynamic_references = dynamic_references
 
     @classmethod
     def from_yaml(
-        cls, template_path: Union[str, Path], imports: Optional[Dict[str, str]] = None
+        cls,
+        template_path: Union[str, Path],
+        imports: Optional[Dict[str, str]] = None,
+        dynamic_references: Optional[Dict[str, Dict[str, str]]] = None,
     ) -> Template:
         """Loads a Cloudformation template from file.
 
@@ -68,6 +88,9 @@ class Template:
             template_path (Union[str, Path]): The path to the template.
             imports (Optional[Dict[str, str]], optional): Values this template plans
             to import from other stacks exports. Defaults to None.
+            dynamic_references (Optional[Dict[str, Dict[str, str]]], optional): Values
+            this template plans to dynamically lookup from ssm/secrets manager.
+            Defaults to None.
 
         Returns:
             Template: A Template object ready for testing.
@@ -82,7 +105,7 @@ class Template:
 
         template = yaml.load(tmp_str, Loader=yaml.FullLoader)
 
-        return cls(template, imports)
+        return cls(template, imports, dynamic_references)
 
     def render(
         self, params: Optional[Dict[str, str]] = None, region: Optional[str] = None
@@ -250,8 +273,67 @@ class Template:
                 )
                 for item in data
             ]
+        elif isinstance(data, str):
+            return self.resolve_dynamic_references(data)
         else:
             return data
+
+    def resolve_dynamic_references(self, data: str) -> str:
+        """
+        Replaces any dynamic references in the provided data with values from
+        our configuration.
+
+        Args:
+            data (str): the value to replace dynamic references within
+
+        Raises:
+            ValueError: If a dynamic reference has been used and no dynamic
+            references have been configured.
+            KeyError: If a dynamic reference name has been used and is not
+            found in the configuration
+        """
+
+        if "{{resolve:" in data:
+            print("For str may need to resolve SSM parameters: %s", data)
+
+            matches = re.search(
+                "{{(resolve:(ssm|ssm-secure|secretsmanager):[a-zA-Z0-9_.\-/]+(:\d+)?)}}",
+                data,
+            )
+
+            if matches:
+                parts = matches.group(1).split(":", 3)
+                print(parts)
+
+                service = parts[1]
+                key = parts[2]
+
+                if service not in self.dynamic_references:
+                    raise KeyError(
+                        "Service %s not included in dynamic references configuration",
+                        service,
+                    )
+                if key not in self.dynamic_references[service]:
+                    raise KeyError(
+                        "Key %s not included in dynamic references configuration for service %s",
+                        key,
+                        service,
+                    )
+
+                updated_value = data.replace(
+                    f"{{resolve:{service}:{key}}}",
+                    self.dynamic_references[service][key],
+                )
+
+                # run the updated value through this function again to pick up any other references
+                return self.resolve_dynamic_references(updated_value)
+            else:
+                raise ValueError(
+                    "Found '{{resolve' in string, but did not match expected regex - %s",
+                    data,
+                )
+
+        return data
 
     def set_parameters(self, parameters: Union[Dict[str, str], None] = None) -> None:
         """Sets the parameters for a template using the provided parameters or

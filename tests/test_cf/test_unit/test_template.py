@@ -28,6 +28,11 @@ def test_constructor(template: Template):
 
     assert "Imports should be a dict, not str." in str(e)
 
+    with pytest.raises(TypeError) as e:
+        Template({}, {}, "")  # type: ignore
+
+    assert "Dynamic References should be a dict, not str." in str(e)
+
     assert isinstance(template.raw, str), "Should load a string instance of template"
     assert isinstance(
         template.template, dict
@@ -285,3 +290,43 @@ def test_render_condition_keys():
     result = template.render({"testParam": "some value"})
 
     assert result["Conditions"]["Foo"] is False
+
+
+def test_resolve_dynamic_references():
+    t = {
+        "Resources": {
+            "Foo": {
+                "Type": "AWS::IAM::Policy",
+                "Properties": {
+                    "PolicyName": "mgt-{{resolve:ssm:/account/current/short_name}}-launch-role-pol",
+                },
+            },
+            "Bar": {
+                "Type": "AWS::IAM::Policy",
+                "Properties": {
+                    "PolicyName": {
+                        "Fn::Sub": "mgt-{{resolve:ssm:/account/${AWS::AccountId}/short_name}}-launch-role-pol"
+                    },
+                },
+            },
+        },
+    }
+
+    dynamic_references = {
+        "ssm": {
+            "/account/current/short_name": "cld-rdr",
+            "/account/555555555555/short_name": "cld-55-rdr",
+        }
+    }
+
+    template = Template(t)
+
+    result = template.render()
+
+    # This item "just" resolves the SSM parameter
+    foo_resource_props = result["Resources"]["Foo"]["Properties"]
+    assert foo_resource_props["PolicyName"] == "mgt-cld-rdr-launch-role-pol"
+
+    # This item resolves the SSM parameter after a substitution has been performed
+    bar_resource_props = result["Resources"]["Foo"]["Properties"]
+    assert bar_resource_props["PolicyName"] == "mgt-cld-55-rdr-launch-role-pol"
