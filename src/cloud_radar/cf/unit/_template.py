@@ -303,16 +303,13 @@ class Template:
         if "{{resolve:" in data:
             print("For str may need to resolve SSM parameters: ", data)
 
-            # The allowed values for the service and key regex are taken
-            # from the documentation for this feature in
-            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html#dynamic-references-pattern
             matches = re.search(
-                "{{(resolve:(ssm|ssm-secure|secretsmanager):[a-zA-Z0-9_.\-/]+(:\d+)?)}}",
+                "{{(resolve:(ssm|ssm-secure|secretsmanager):[a-zA-Z0-9_.-/:]+)}}",
                 data,
             )
 
             if matches:
-                parts = matches.group(1).split(":", 3)
+                parts = matches.group(1).split(":", 2)
                 print(parts)
 
                 service = parts[1]
@@ -324,7 +321,10 @@ class Template:
                     )
                 if key not in self.dynamic_references[service]:
                     raise KeyError(
-                        f"Key {key} not included in dynamic references configuration for service {service}"
+                        (
+                            f"Key {key} not included in dynamic references "
+                            f"configuration for service {service}"
+                        )
                     )
 
                 print(f"{{{{resolve:{service}:{key}}}}}")
@@ -334,7 +334,8 @@ class Template:
                     self.dynamic_references[service][key],
                 )
 
-                # run the updated value through this function again to pick up any other references
+                # run the updated value through this function again
+                # to pick up any other references
                 return self.resolve_dynamic_references(updated_value)
             elif "${" not in data:
                 # If there is a "${" in the string it is likely we are meant to
