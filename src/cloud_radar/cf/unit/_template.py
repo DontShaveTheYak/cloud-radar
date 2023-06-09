@@ -283,6 +283,10 @@ class Template:
 
         for p_name, p_value in t_params.items():
             if p_name in parameters:
+                validate_parameter_constraints(
+                    p_name, t_params[p_name], parameters[p_name]
+                )
+
                 t_params[p_name]["Value"] = parameters[p_name]
                 continue
 
@@ -292,6 +296,57 @@ class Template:
                 )
 
             t_params[p_name]["Value"] = p_value["Default"]
+
+
+def validate_parameter_constraints(
+    parameter_name: str, parameter_definition: dict, parameter_value: str
+):
+    """
+    Validate that the parameter value matches any constraints
+    for allowed values, allowed patterns etc.
+    This method will raise a ValueError if any validation constraints
+    are not met.
+    Args:
+        parameter_name (str): The name of the parameter being validated
+        parameter_definition (Dict): The parameter definition being validated
+                                    against
+        parameter_value (str): The supplied parameter value being validated
+    """
+    # TODO: When applied to a parameter of type CommaDelimitedList,
+    # each value in the list must be one of the specified allowed values
+
+    # Compare allowed values
+    if (
+        "AllowedValues" in parameter_definition
+        and parameter_value not in parameter_definition["AllowedValues"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} not in allowed "
+                f"values for parameter {parameter_name}"
+            )
+        )
+
+    # if ("AllowedPattern" in parameter_definition)
+    if "MinLength" in parameter_definition and len(parameter_value) < int(
+        parameter_definition["MinLength"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} is shorter than the minimum length for"
+                f" parameter {parameter_name}"
+            )
+        )
+
+    if "MaxLength" in parameter_definition and len(parameter_value) > int(
+        parameter_definition["MaxLength"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} is longer than the maximum length for"
+                f" parameter {parameter_name}"
+            )
+        )
 
 
 def add_metadata(template: Dict, region: str) -> None:

@@ -226,6 +226,81 @@ def test_set_params():
     ], "Should set default values."
 
 
+def test_set_params_allowed_values():
+    t = {
+        "Parameters": {
+            "InstanceTypeParameter": {
+                "Type": "String",
+                "Default": "t2.micro",
+                "AllowedValues": ["t2.micro", "m1.small", "m1.large"],
+                "Description": (
+                    "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+                ),
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying one of the allowed values works
+    template.set_parameters({"InstanceTypeParameter": "m1.small"})
+
+    actual_value = template.template["Parameters"]["InstanceTypeParameter"]
+    assert (
+        "m1.small" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test that supplying a value not in the allowed values fails
+    with pytest.raises(
+        ValueError,
+        match="Value m5.large not in allowed values for parameter InstanceTypeParameter",
+    ):
+        template.set_parameters({"InstanceTypeParameter": "m5.large"})
+
+
+def test_set_params_length_allowed_pattern():
+    t = {
+        "Parameters": {
+            "DBPwd": {
+                "NoEcho": "true",
+                "Description": "The database admin account password",
+                "Type": "String",
+                "MinLength": "5",
+                "MaxLength": "21",
+                "AllowedPattern": "^[a-zA-Z0-9]*$",
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying something that meets the criteria works
+    template.set_parameters({"DBPwd": "m1Small"})
+
+    actual_value = template.template["Parameters"]["DBPwd"]
+    assert (
+        "m1Small" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test that supplying something too short is rejected
+    with pytest.raises(
+        ValueError,
+        match="Value m1s is shorter than the minimum length for parameter DBPwd",
+    ):
+        template.set_parameters({"DBPwd": "m1s"})
+
+    # Test that supplying something too long is rejected
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Value m1s921234512345naodinvaoinvoiaenfio is longer than the "
+            "maximum length for parameter DBPwd"
+        ),
+    ):
+        template.set_parameters({"DBPwd": "m1s921234512345naodinvaoinvoiaenfio"})
+
+
+# def test_set_regex_params():
+
+
 @pytest.mark.parametrize("t", [{}, {"Metadata": {}}])
 def test_metadata(t):
     region = "us-east-1"
