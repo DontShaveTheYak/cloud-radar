@@ -204,7 +204,7 @@ class Template:
 
         return stack
 
-    def resolve_values(
+    def resolve_values(  # noqa: max-complexity: 13
         self,
         data: Any,
         allowed_func: functions.Dispatch,
@@ -301,8 +301,6 @@ class Template:
         """
 
         if "{{resolve:" in data:
-            print("For str may need to resolve SSM parameters: ", data)
-
             matches = re.search(
                 "{{(resolve:(ssm|ssm-secure|secretsmanager):[a-zA-Z0-9_.-/:]+)}}",
                 data,
@@ -310,7 +308,6 @@ class Template:
 
             if matches:
                 parts = matches.group(1).split(":", 2)
-                print(parts)
 
                 service = parts[1]
                 key = parts[2]
@@ -327,8 +324,6 @@ class Template:
                         )
                     )
 
-                print(f"{{{{resolve:{service}:{key}}}}}")
-                print(self.dynamic_references[service][key])
                 updated_value = data.replace(
                     f"{{{{resolve:{service}:{key}}}}}",
                     self.dynamic_references[service][key],
