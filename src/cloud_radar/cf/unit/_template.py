@@ -318,17 +318,24 @@ def validate_parameter_constraints(
             parameter_name, parameter_definition, parameter_value
         )
     elif parameter_definition["Type"] == "CommaDelimitedList":
-        # TODO: When applied to a parameter of type CommaDelimitedList,
-        # each value in the list must be one of the specified allowed values
-        raise ValueError("TODO: Implement")
+        # When applied to a parameter of type CommaDelimitedList,
+        # each value in the list must meet the String type criteria
+        for part in parameter_value.split(","):
+            validate_string_parameter_constraints(
+                parameter_name, parameter_definition, part.strip()
+            )
     elif parameter_definition["Type"] == "Number":
         validate_number_parameter_constraints(
             parameter_name, parameter_definition, parameter_value
         )
     elif parameter_definition["Type"] == "List<Number>":
-        # TODO: the docs are not as clear here but I think it will be
-        # the same as CommaDelimitedList
-        raise ValueError("TODO: Implement")
+        # The docs are not as clear here but I think it will be
+        # the same as CommaDelimitedList - run the number parameter
+        # constraints for each item in the list
+        for part in parameter_value.split(","):
+            validate_number_parameter_constraints(
+                parameter_name, parameter_definition, part.strip()
+            )
 
 
 def validate_number_parameter_constraints(

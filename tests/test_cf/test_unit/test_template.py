@@ -263,6 +263,45 @@ def test_set_params_string_allowed_values():
         template.set_parameters({"InstanceTypeParameter": "m5.large"})
 
 
+def test_set_params_string_list_allowed_values():
+    t = {
+        "Parameters": {
+            "InstanceTypeParameter": {
+                "Type": "CommaDelimitedList",
+                "Default": "t2.micro",
+                "AllowedValues": ["t2.micro", "m1.small", "m1.large"],
+                "Description": (
+                    "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+                ),
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying one of the allowed values works
+    template.set_parameters({"InstanceTypeParameter": "m1.small"})
+
+    actual_value = template.template["Parameters"]["InstanceTypeParameter"]
+    assert (
+        "m1.small" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test that supplying a list of valid values works
+    template.set_parameters({"InstanceTypeParameter": "m1.small,t2.micro"})
+
+    actual_value = template.template["Parameters"]["InstanceTypeParameter"]
+    assert (
+        "m1.small,t2.micro" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test that supplying a value not in the allowed values fails
+    with pytest.raises(
+        ValueError,
+        match="Value m5.large not in allowed values for parameter InstanceTypeParameter",
+    ):
+        template.set_parameters({"InstanceTypeParameter": "m1.small,m5.large,t2.micro"})
+
+
 def test_set_params_string_length_allowed_pattern():
     t = {
         "Parameters": {
@@ -349,7 +388,49 @@ def test_set_params_number_min_max():
         template.set_parameters({"DBPort": "65536"})
 
 
-# def test_set_regex_params():
+def test_set_params_list_number_min_max():
+    t = {
+        "Parameters": {
+            "ASGCapacity": {
+                "Type": "List<Number>",
+                "Description": (
+                    "Min, Desired & Max capacity of Autoscaling Group "
+                    "separated with comma."
+                ),
+                "MinValue": "2",
+                "MaxValue": "10",
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying a single value that meets the criteria works
+    template.set_parameters({"ASGCapacity": "2"})
+
+    actual_value = template.template["Parameters"]["ASGCapacity"]
+    assert "2" == actual_value["Value"], "Should set the value to what we pass in."
+
+    # Test that supplying a list of valid values works
+    template.set_parameters({"ASGCapacity": "2, 2, 10"})
+
+    actual_value = template.template["Parameters"]["ASGCapacity"]
+    assert (
+        "2, 2, 10" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test the supplying something below the min value is rejected
+    with pytest.raises(
+        ValueError,
+        match=("Value 1 is below the minimum value for parameter ASGCapacity"),
+    ):
+        template.set_parameters({"ASGCapacity": "2, 1, 10"})
+
+    # Test the supplying something above the max value is rejected
+    with pytest.raises(
+        ValueError,
+        match=("Value 11 is above the maximum value for parameter ASGCapacity"),
+    ):
+        template.set_parameters({"ASGCapacity": "2, 5, 11"})
 
 
 @pytest.mark.parametrize("t", [{}, {"Metadata": {}}])
