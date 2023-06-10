@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
@@ -312,8 +313,75 @@ def validate_parameter_constraints(
                                     against
         parameter_value (str): The supplied parameter value being validated
     """
-    # TODO: When applied to a parameter of type CommaDelimitedList,
-    # each value in the list must be one of the specified allowed values
+    if parameter_definition["Type"] == "String":
+        validate_string_parameter_constraints(
+            parameter_name, parameter_definition, parameter_value
+        )
+    elif parameter_definition["Type"] == "CommaDelimitedList":
+        # TODO: When applied to a parameter of type CommaDelimitedList,
+        # each value in the list must be one of the specified allowed values
+        raise ValueError("TODO: Implement")
+    elif parameter_definition["Type"] == "Number":
+        validate_number_parameter_constraints(
+            parameter_name, parameter_definition, parameter_value
+        )
+    elif parameter_definition["Type"] == "List<Number>":
+        # TODO: the docs are not as clear here but I think it will be
+        # the same as CommaDelimitedList
+        raise ValueError("TODO: Implement")
+
+
+def validate_number_parameter_constraints(
+    parameter_name: str, parameter_definition: dict, parameter_value: str
+):
+    """
+    Validate that the parameter value matches any constraints
+    that are applicable for Number value parameters
+    (min/max value)
+    This method will raise a ValueError if any validation constraints
+    are not met.
+    Args:
+        parameter_name (str): The name of the parameter being validated
+        parameter_definition (Dict): The parameter definition being validated
+                                    against
+        parameter_value (str): The supplied parameter value being validated
+    """
+    if "MinValue" in parameter_definition and int(parameter_value) < int(
+        parameter_definition["MinValue"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} is below the minimum value for"
+                f" parameter {parameter_name}"
+            )
+        )
+
+    if "MaxValue" in parameter_definition and int(parameter_value) > int(
+        parameter_definition["MaxValue"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} is above the maximum value for"
+                f" parameter {parameter_name}"
+            )
+        )
+
+
+def validate_string_parameter_constraints(
+    parameter_name: str, parameter_definition: dict, parameter_value: str
+):
+    """
+    Validate that the parameter value matches any constraints
+    that are applicable for String value parameters
+    (allowed values, allowed patterns, min/max length)
+    This method will raise a ValueError if any validation constraints
+    are not met.
+    Args:
+        parameter_name (str): The name of the parameter being validated
+        parameter_definition (Dict): The parameter definition being validated
+                                    against
+        parameter_value (str): The supplied parameter value being validated
+    """
 
     # Compare allowed values
     if (
@@ -327,7 +395,16 @@ def validate_parameter_constraints(
             )
         )
 
-    # if ("AllowedPattern" in parameter_definition)
+    if "AllowedPattern" in parameter_definition and not re.match(
+        parameter_definition["AllowedPattern"], parameter_value
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} does not match the AllowedPattern "
+                f"for parameter {parameter_name}"
+            )
+        )
+
     if "MinLength" in parameter_definition and len(parameter_value) < int(
         parameter_definition["MinLength"]
     ):
