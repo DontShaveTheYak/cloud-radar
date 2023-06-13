@@ -83,16 +83,7 @@ jobs:
       - name: Setup Poetry
         run: pip install poetry==1.4.2
 
-      - name: Publish to Test PyPI
-        if: github.base_ref == 'develop'
-        run: |
-          poetry version ${{needs.tag.outputs.tag}}
-          poetry build
-          poetry config repositories.testpypi https://test.pypi.org/legacy/
-          poetry publish -r testpypi --username '${{ secrets.PYPI_USERNAME }}' --password '${{ secrets.TEST_PYPI_PASSWORD }}'
-
       - name: Publish to PyPI
-        if: github.base_ref == 'master'
         run: |
           poetry version ${{needs.tag.outputs.tag}}
           poetry build
