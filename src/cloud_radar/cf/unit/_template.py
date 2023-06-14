@@ -373,6 +373,10 @@ class Template:
 
         for p_name, p_value in t_params.items():
             if p_name in parameters:
+                validate_parameter_constraints(
+                    p_name, t_params[p_name], parameters[p_name]
+                )
+
                 t_params[p_name]["Value"] = parameters[p_name]
                 continue
 
@@ -382,6 +386,140 @@ class Template:
                 )
 
             t_params[p_name]["Value"] = p_value["Default"]
+
+
+def validate_parameter_constraints(
+    parameter_name: str, parameter_definition: dict, parameter_value: str
+):
+    """
+    Validate that the parameter value matches any constraints
+    for allowed values, allowed patterns etc.
+    This method will raise a ValueError if any validation constraints
+    are not met.
+    Args:
+        parameter_name (str): The name of the parameter being validated
+        parameter_definition (Dict): The parameter definition being validated
+                                    against
+        parameter_value (str): The supplied parameter value being validated
+    """
+    if parameter_definition["Type"] == "String":
+        validate_string_parameter_constraints(
+            parameter_name, parameter_definition, parameter_value
+        )
+    elif parameter_definition["Type"] == "CommaDelimitedList":
+        # When applied to a parameter of type CommaDelimitedList,
+        # each value in the list must meet the String type criteria
+        for part in parameter_value.split(","):
+            validate_string_parameter_constraints(
+                parameter_name, parameter_definition, part.strip()
+            )
+    elif parameter_definition["Type"] == "Number":
+        validate_number_parameter_constraints(
+            parameter_name, parameter_definition, parameter_value
+        )
+    elif parameter_definition["Type"] == "List<Number>":
+        # The docs are not as clear here but I think it will be
+        # the same as CommaDelimitedList - run the number parameter
+        # constraints for each item in the list
+        for part in parameter_value.split(","):
+            validate_number_parameter_constraints(
+                parameter_name, parameter_definition, part.strip()
+            )
+
+
+def validate_number_parameter_constraints(
+    parameter_name: str, parameter_definition: dict, parameter_value: str
+):
+    """
+    Validate that the parameter value matches any constraints
+    that are applicable for Number value parameters
+    (min/max value)
+    This method will raise a ValueError if any validation constraints
+    are not met.
+    Args:
+        parameter_name (str): The name of the parameter being validated
+        parameter_definition (Dict): The parameter definition being validated
+                                    against
+        parameter_value (str): The supplied parameter value being validated
+    """
+    if "MinValue" in parameter_definition and int(parameter_value) < int(
+        parameter_definition["MinValue"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} is below the minimum value for"
+                f" parameter {parameter_name}"
+            )
+        )
+
+    if "MaxValue" in parameter_definition and int(parameter_value) > int(
+        parameter_definition["MaxValue"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} is above the maximum value for"
+                f" parameter {parameter_name}"
+            )
+        )
+
+
+def validate_string_parameter_constraints(
+    parameter_name: str, parameter_definition: dict, parameter_value: str
+):
+    """
+    Validate that the parameter value matches any constraints
+    that are applicable for String value parameters
+    (allowed values, allowed patterns, min/max length)
+    This method will raise a ValueError if any validation constraints
+    are not met.
+    Args:
+        parameter_name (str): The name of the parameter being validated
+        parameter_definition (Dict): The parameter definition being validated
+                                    against
+        parameter_value (str): The supplied parameter value being validated
+    """
+
+    # Compare allowed values
+    if (
+        "AllowedValues" in parameter_definition
+        and parameter_value not in parameter_definition["AllowedValues"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} not in allowed "
+                f"values for parameter {parameter_name}"
+            )
+        )
+
+    if "AllowedPattern" in parameter_definition and not re.match(
+        parameter_definition["AllowedPattern"], parameter_value
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} does not match the AllowedPattern "
+                f"for parameter {parameter_name}"
+            )
+        )
+
+    if "MinLength" in parameter_definition and len(parameter_value) < int(
+        parameter_definition["MinLength"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} is shorter than the minimum length for"
+                f" parameter {parameter_name}"
+            )
+        )
+
+    if "MaxLength" in parameter_definition and len(parameter_value) > int(
+        parameter_definition["MaxLength"]
+    ):
+        raise ValueError(
+            (
+                f"Value {parameter_value} is longer than the maximum length for"
+                f" parameter {parameter_name}"
+            )
+        )
 
 
 def add_metadata(template: Dict, region: str) -> None:
