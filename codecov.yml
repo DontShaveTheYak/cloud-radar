@@ -1,0 +1,22 @@
+coverage:
+  status:
+    project:
+      default:
+        # basic
+        target: auto
+        threshold: 3%
+        base: auto
+       # advanced settings
+        branches:
+          - develop
+        if_ci_failed: error #success, failure, error, ignore
+    patch:
+      default:
+        # basic
+        target: auto
+        threshold: 3%
+        base: auto
+        # advanced
+        branches:
+          - develop
+        if_ci_failed: error #success, failure, error, ignore
