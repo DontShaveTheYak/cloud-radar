@@ -56,7 +56,7 @@ def test_from_yaml(mock_open):
 
 def test_render_true():
     t = {
-        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Parameters": {"testParam": {"Type": "String", "Default": "Test Value"}},
         "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
         "Resources": {"Foo": {"Condition": "Bar", "Properties": {}}},
     }
@@ -80,7 +80,7 @@ def test_render_false():
     params = {"testParam": "Not Test Value"}
 
     t = {
-        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Parameters": {"testParam": {"Type": "String", "Default": "Test Value"}},
         "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
         "Resources": {
             "Foo": {"Condition": "Bar", "Properties": {}},
@@ -103,7 +103,7 @@ def test_render_false():
 
 def test_render_invalid_ref():
     t = {
-        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Parameters": {"testParam": {"Type": "String", "Default": "Test Value"}},
         "Conditions": {"Bar": {"Fn::Equals": [{"Ref": "testParam"}, "Test Value"]}},
         "Resources": {
             "Foo": {"Condition": "Bar", "Properties": {"Name": {"Ref": "FAKE!"}}}
@@ -120,7 +120,7 @@ def test_render_invalid_ref():
 
 def test_resolve():
     t = {
-        "Parameters": {"Test": {"Value": "test"}},
+        "Parameters": {"Test": {"Type": "String", "Value": "test"}},
         "Conditions": {"test": True},
         "Resources": {},
     }
@@ -155,7 +155,7 @@ def test_resolve():
 
 def test_function_order():
     t = {
-        "Parameters": {"Test": {"Value": "test"}},
+        "Parameters": {"Test": {"Type": "String", "Value": "test"}},
         "Conditions": {"test": True},
     }
 
@@ -200,7 +200,13 @@ def test_set_params():
         e.value
     ), "Should throw correct exception."
 
-    template.template = {"Parameters": {"Test": {}}}
+    template.template = {
+        "Parameters": {
+            "Test": {
+                "Type": "String",
+            }
+        }
+    }
 
     with pytest.raises(ValueError) as e:
         template.set_parameters()
@@ -211,7 +217,7 @@ def test_set_params():
 
     template.set_parameters({"Test": "value"})
 
-    assert {"Test": {"Value": "value"}} == template.template[
+    assert {"Test": {"Type": "String", "Value": "value"}} == template.template[
         "Parameters"
     ], "Should set the value to what we pass in."
 
@@ -231,6 +237,207 @@ def test_set_params():
     ], "Should set default values."
 
 
+def test_set_params_string_allowed_values():
+    t = {
+        "Parameters": {
+            "InstanceTypeParameter": {
+                "Type": "String",
+                "Default": "t2.micro",
+                "AllowedValues": ["t2.micro", "m1.small", "m1.large"],
+                "Description": (
+                    "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+                ),
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying one of the allowed values works
+    template.set_parameters({"InstanceTypeParameter": "m1.small"})
+
+    actual_value = template.template["Parameters"]["InstanceTypeParameter"]
+    assert (
+        "m1.small" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test that supplying a value not in the allowed values fails
+    with pytest.raises(
+        ValueError,
+        match="Value m5.large not in allowed values for parameter InstanceTypeParameter",
+    ):
+        template.set_parameters({"InstanceTypeParameter": "m5.large"})
+
+
+def test_set_params_string_list_allowed_values():
+    t = {
+        "Parameters": {
+            "InstanceTypeParameter": {
+                "Type": "CommaDelimitedList",
+                "Default": "t2.micro",
+                "AllowedValues": ["t2.micro", "m1.small", "m1.large"],
+                "Description": (
+                    "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+                ),
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying one of the allowed values works
+    template.set_parameters({"InstanceTypeParameter": "m1.small"})
+
+    actual_value = template.template["Parameters"]["InstanceTypeParameter"]
+    assert (
+        "m1.small" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test that supplying a list of valid values works
+    template.set_parameters({"InstanceTypeParameter": "m1.small,t2.micro"})
+
+    actual_value = template.template["Parameters"]["InstanceTypeParameter"]
+    assert (
+        "m1.small,t2.micro" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test that supplying a value not in the allowed values fails
+    with pytest.raises(
+        ValueError,
+        match="Value m5.large not in allowed values for parameter InstanceTypeParameter",
+    ):
+        template.set_parameters({"InstanceTypeParameter": "m1.small,m5.large,t2.micro"})
+
+
+def test_set_params_string_length_allowed_pattern():
+    t = {
+        "Parameters": {
+            "DBPwd": {
+                "NoEcho": "true",
+                "Description": "The database admin account password",
+                "Type": "String",
+                "MinLength": "5",
+                "MaxLength": "21",
+                "AllowedPattern": "^[a-zA-Z0-9]*$",
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying something that meets the criteria works
+    template.set_parameters({"DBPwd": "m1Small"})
+
+    actual_value = template.template["Parameters"]["DBPwd"]
+    assert (
+        "m1Small" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test that supplying something too short is rejected
+    with pytest.raises(
+        ValueError,
+        match="Value m1s is shorter than the minimum length for parameter DBPwd",
+    ):
+        template.set_parameters({"DBPwd": "m1s"})
+
+    # Test that supplying something too long is rejected
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Value m1s921234512345naodinvaoinvoiaenfio is longer than the "
+            "maximum length for parameter DBPwd"
+        ),
+    ):
+        template.set_parameters({"DBPwd": "m1s921234512345naodinvaoinvoiaenfio"})
+
+    # Test that supplying something that does not match the pattern is rejected
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Value my-super-password does not match the AllowedPattern "
+            "for parameter DBPwd"
+        ),
+    ):
+        template.set_parameters({"DBPwd": "my-super-password"})
+
+
+def test_set_params_number_min_max():
+    t = {
+        "Parameters": {
+            "DBPort": {
+                "Default": "3306",
+                "Description": "TCP/IP port for the database",
+                "Type": "Number",
+                "MinValue": "1150",
+                "MaxValue": "65535",
+            },
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying something that meets the criteria works
+    template.set_parameters({"DBPort": "5432"})
+
+    actual_value = template.template["Parameters"]["DBPort"]
+    assert "5432" == actual_value["Value"], "Should set the value to what we pass in."
+
+    # Test the supplying something below the min value is rejected
+    with pytest.raises(
+        ValueError,
+        match=("Value 1149 is below the minimum value " "for parameter DBPort"),
+    ):
+        template.set_parameters({"DBPort": "1149"})
+
+    # Test the supplying something above the max value is rejected
+    with pytest.raises(
+        ValueError,
+        match=("Value 65536 is above the maximum value " "for parameter DBPort"),
+    ):
+        template.set_parameters({"DBPort": "65536"})
+
+
+def test_set_params_list_number_min_max():
+    t = {
+        "Parameters": {
+            "ASGCapacity": {
+                "Type": "List<Number>",
+                "Description": (
+                    "Min, Desired & Max capacity of Autoscaling Group "
+                    "separated with comma."
+                ),
+                "MinValue": "2",
+                "MaxValue": "10",
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying a single value that meets the criteria works
+    template.set_parameters({"ASGCapacity": "2"})
+
+    actual_value = template.template["Parameters"]["ASGCapacity"]
+    assert "2" == actual_value["Value"], "Should set the value to what we pass in."
+
+    # Test that supplying a list of valid values works
+    template.set_parameters({"ASGCapacity": "2, 2, 10"})
+
+    actual_value = template.template["Parameters"]["ASGCapacity"]
+    assert (
+        "2, 2, 10" == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test the supplying something below the min value is rejected
+    with pytest.raises(
+        ValueError,
+        match=("Value 1 is below the minimum value for parameter ASGCapacity"),
+    ):
+        template.set_parameters({"ASGCapacity": "2, 1, 10"})
+
+    # Test the supplying something above the max value is rejected
+    with pytest.raises(
+        ValueError,
+        match=("Value 11 is above the maximum value for parameter ASGCapacity"),
+    ):
+        template.set_parameters({"ASGCapacity": "2, 5, 11"})
+
+
 @pytest.mark.parametrize("t", [{}, {"Metadata": {}}])
 def test_metadata(t):
     region = "us-east-1"
@@ -243,7 +450,7 @@ def test_metadata(t):
 
 def test_render_condition_keys():
     t = {
-        "Parameters": {"testParam": {"Default": "Test Value"}},
+        "Parameters": {"testParam": {"Type": "String", "Default": "Test Value"}},
         "Conditions": {
             "Bar": {
                 "Fn::Equals": [
