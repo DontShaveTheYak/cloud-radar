@@ -28,6 +28,11 @@ def test_constructor(template: Template):
 
     assert "Imports should be a dict, not str." in str(e)
 
+    with pytest.raises(TypeError) as e:
+        Template({}, {}, "")  # type: ignore
+
+    assert "Dynamic References should be a dict, not str." in str(e)
+
     assert isinstance(template.raw, str), "Should load a string instance of template"
     assert isinstance(
         template.template, dict
@@ -285,3 +290,163 @@ def test_render_condition_keys():
     result = template.render({"testParam": "some value"})
 
     assert result["Conditions"]["Foo"] is False
+
+
+def test_resolve_dynamic_references():
+    t = {
+        "Resources": {
+            "Foo": {
+                "Type": "AWS::IAM::Policy",
+                "Properties": {
+                    "PolicyName": (
+                        "mgt-{{resolve:ssm:/account/current/short_name}}"
+                        "-launch-role-pol"
+                    ),
+                },
+            },
+            "Bar": {
+                "Type": "AWS::IAM::Policy",
+                "Properties": {
+                    "PolicyName": {
+                        "Fn::Sub": (
+                            "mgt-{{resolve:ssm:/account/${AWS::AccountId}/short_name}}"
+                            "-launch-role-pol"
+                        )
+                    },
+                },
+            },
+            "TwoRefTest": {
+                "Type": "AWS::IAM::Policy",
+                "Properties": {
+                    "PolicyName": {
+                        "Fn::Sub": (
+                            "mgt-{{resolve:ssm:/account/${AWS::AccountId}/short_name}}"
+                            "-launch-{{resolve:ssm:/account/current/short_name}}-pol"
+                        )
+                    },
+                },
+            },
+        },
+    }
+
+    dynamic_references = {
+        "ssm": {
+            "/account/current/short_name": "cld-rdr",
+            "/account/555555555555/short_name": "cld-55-rdr",
+        }
+    }
+
+    template = Template(t, dynamic_references=dynamic_references)
+
+    result = template.render()
+
+    # This item "just" resolves the SSM parameter
+    foo_resource_props = result["Resources"]["Foo"]["Properties"]
+    assert foo_resource_props["PolicyName"] == "mgt-cld-rdr-launch-role-pol"
+
+    # This item resolves the SSM parameter after a substitution has been performed
+    bar_resource_props = result["Resources"]["Bar"]["Properties"]
+    assert bar_resource_props["PolicyName"] == "mgt-cld-55-rdr-launch-role-pol"
+
+    # This item contains multiple resolved parameters
+    two_resource_props = result["Resources"]["TwoRefTest"]["Properties"]
+    assert two_resource_props["PolicyName"] == "mgt-cld-55-rdr-launch-cld-rdr-pol"
+
+
+def test_resolve_all_types_dynamic_references():
+    # This contains one of each type of dynamic references, with
+    # the example resources coming from the documentation
+    # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html
+    t = {
+        "Resources": {
+            "MyRDSInstance": {
+                "Type": "AWS::RDS::DBInstance",
+                "Properties": {
+                    "DBName": "MyRDSInstance",
+                    "AllocatedStorage": "20",
+                    "DBInstanceClass": "db.t2.micro",
+                    "Engine": "mysql",
+                    "MasterUsername": (
+                        "{{resolve:secretsmanager:MyRDSSecret:SecretString:username}}"
+                    ),
+                    "MasterUserPassword": (
+                        "{{resolve:secretsmanager:MyRDSSecret:SecretString:password}}"
+                    ),
+                },
+            },
+            "MyIAMUser": {
+                "Type": "AWS::IAM::User",
+                "Properties": {
+                    "UserName": "MyUserName",
+                    "LoginProfile": {
+                        "Password": "{{resolve:ssm-secure:IAMUserPassword:10}}"
+                    },
+                },
+            },
+            "MyS3Bucket": {
+                "Type": "AWS::S3::Bucket",
+                "Properties": {"AccessControl": "{{resolve:ssm:S3AccessControl:2}}"},
+            },
+        }
+    }
+
+    dynamic_references = {
+        "ssm": {"S3AccessControl:2": "private"},
+        "ssm-secure": {"IAMUserPassword:10": "my-really-secure-iam-password"},
+        "secretsmanager": {
+            "MyRDSSecret:SecretString:username": "my-username",
+            "MyRDSSecret:SecretString:password": "my-password",
+        },
+    }
+
+    template = Template(t, dynamic_references=dynamic_references)
+    result = template.render()
+
+    rds_resource_props = result["Resources"]["MyRDSInstance"]["Properties"]
+    assert rds_resource_props["MasterUsername"] == "my-username"
+    assert rds_resource_props["MasterUserPassword"] == "my-password"
+
+    iam_resource_props = result["Resources"]["MyIAMUser"]["Properties"]
+    assert (
+        iam_resource_props["LoginProfile"]["Password"]
+        == "my-really-secure-iam-password"
+    )
+
+    s3_resource_props = result["Resources"]["MyS3Bucket"]["Properties"]
+    assert s3_resource_props["AccessControl"] == "private"
+
+
+def test_unknown_dynamic_references():
+    t = {
+        "Resources": {
+            "Foo": {
+                "Type": "AWS::IAM::Policy",
+                "Properties": {
+                    "PolicyName": (
+                        "mgt-{{resolve:ssm:/account/current/short_name}}"
+                        "-launch-role-pol"
+                    ),
+                },
+            },
+        },
+    }
+
+    # Case where there is no dynamic reference configuration
+    template = Template(t)
+    with pytest.raises(
+        KeyError, match="Service ssm not included in dynamic references configuration"
+    ):
+        template.render()
+
+    # Case where there is a dynamic reference configuration for the service,
+    # but not the key
+    template = Template(t, dynamic_references={"ssm": {"not/the/right/key": "dummy"}})
+    with pytest.raises(
+        KeyError,
+        match=(
+            "Key /account/current/short_name not"
+            " included in dynamic references configuration"
+            " for service ssm"
+        ),
+    ):
+        template.render()

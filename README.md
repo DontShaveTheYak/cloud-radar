@@ -151,14 +151,14 @@ bucket_name = bucket.get_property_value("BucketName")
 assert "us-west-2" in bucket_name
 ```
 
-The AWS pseudo variables are all class attributes and can be modified before rendering a template.
+The AWS [pseudo parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/pseudo-parameter-reference.html) are all class attributes and can be modified before rendering a template.
 ```python
 # The value of 'AWS::AccountId' in !Sub "My AccountId is ${AWS::AccountId}" can be changed:
 Template.AccountId = '8675309'
 ```
 _Note: Region should only be changed to change the default value. To change the region during testing pass the desired region to render(region='us-west-2')_
 
-The default values for psedo variables:
+The default values for pseudo parameters:
 
 | Name             | Default Value   |
 | ---------------- | --------------- |
@@ -171,6 +171,43 @@ The default values for psedo variables:
 | **StackName**    | ""              |
 | **URLSuffix**    | "amazonaws.com" |
 _Note: Bold variables are not fully impletmented yet see the [Roadmap](#roadmap)_
+
+At the point of creating the `Template` instance additional configuration is required to be provided if you are using certain approaches to resolving values.
+
+If you use [Fn::ImportValue](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-importvalue.html), a dictionary of key/value pairs is required containing all the keys that your template uses. If an import name is referenced by the template which is not included in this dictionary, an error will be raised.
+
+```
+imports = {
+  "FakeKey": "FakeValue"
+}
+
+template = Template(template_content, imports=imports)
+```
+
+If you use [Dynamic References](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html), a dictionary containing the service and key/value pairs is required containing all the dynamic references that your template uses. If a dynamic reference is included in the template and not contained in the configuration object, an error will be raised.
+
+```
+template_content = {
+    "Resources": {
+        "Foo": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": (
+                    "mgt-{{resolve:ssm:/account/current/short_name}}-launch-role-pol"
+                ),
+            },
+        },
+    },
+}
+
+dynamic_references = {
+  "ssm": {
+    "/account/current/short_name": "dummy"
+  }
+}
+
+template = Template(template_content, dynamic_references=dynamic_references)
+```
 
 A real unit testing example using Pytest can be seen [here](./tests/test_cf/test_examples/test_unit.py)
 
