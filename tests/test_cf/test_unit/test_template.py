@@ -4,10 +4,7 @@ from unittest.mock import mock_open, patch
 import pytest
 
 from cloud_radar.cf.unit import functions
-from cloud_radar.cf.unit._template import (
-    Template,
-    add_metadata,
-)
+from cloud_radar.cf.unit._template import Template, add_metadata
 
 
 @pytest.fixture
@@ -579,6 +576,7 @@ def test_resolve_all_types_dynamic_references():
                     "MasterUserPassword": (
                         "{{resolve:secretsmanager:MyRDSSecret:SecretString:password}}"
                     ),
+                    "SnapshotIdentifier": "{{resolve:ssm:development-snapshot-arn}}",
                 },
             },
             "MyIAMUser": {
@@ -598,7 +596,7 @@ def test_resolve_all_types_dynamic_references():
     }
 
     dynamic_references = {
-        "ssm": {"S3AccessControl:2": "private"},
+        "ssm": {"S3AccessControl:2": "private", "development-snapshot-arn": "some_arn"},
         "ssm-secure": {"IAMUserPassword:10": "my-really-secure-iam-password"},
         "secretsmanager": {
             "MyRDSSecret:SecretString:username": "my-username",
