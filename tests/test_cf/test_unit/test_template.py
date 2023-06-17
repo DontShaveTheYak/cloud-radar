@@ -438,6 +438,164 @@ def test_set_params_list_number_min_max():
         template.set_parameters({"ASGCapacity": "2, 5, 11"})
 
 
+@pytest.mark.parametrize(
+    "type,valid_input,invalid_input,fail_message_value,fail_message_type",
+    [
+        (
+            "AWS::EC2::AvailabilityZone::Name",
+            "us-east-1a",
+            "xx-west-1c",
+            "xx-west-1c",
+            "AWS::EC2::AvailabilityZone::Name",
+        ),
+        (
+            "AWS::EC2::Image::Id",
+            "ami-0ff8a91507f77f867",
+            "mygreatimage",
+            "mygreatimage",
+            "AWS::EC2::Image::Id",
+        ),
+        (
+            "AWS::EC2::Instance::Id",
+            "i-1e731a32",
+            "ke-1e731a32",
+            "ke-1e731a32",
+            "AWS::EC2::Instance::Id",
+        ),
+        # ("AWS::EC2::KeyPair::KeyName",),
+        # ("AWS::EC2::SecurityGroup::GroupName", "my-sg-abc", "", "",
+        #     "AWS::EC2::SecurityGroup::GroupName"),
+        (
+            "AWS::EC2::SecurityGroup::Id",
+            "sg-a123fd85",
+            "ke-1e731a32",
+            "ke-1e731a32",
+            "AWS::EC2::SecurityGroup::Id",
+        ),
+        (
+            "AWS::EC2::Subnet::Id",
+            "subnet-123a351e",
+            "sunbet-123a351e",
+            "sunbet-123a351e",
+            "AWS::EC2::Subnet::Id",
+        ),
+        (
+            "AWS::EC2::Volume::Id",
+            "vol-3cdd3f56",
+            "vl-3cdd3f56",
+            "vl-3cdd3f56",
+            "AWS::EC2::Volume::Id",
+        ),
+        (
+            "AWS::EC2::Volume::Id",
+            "vol-3cdd3f56ae231cef5",
+            "vol-3cdd3f56ae231cef5a",
+            "vol-3cdd3f56ae231cef5a",
+            "AWS::EC2::Volume::Id",
+        ),
+        (
+            "AWS::EC2::VPC::Id",
+            "vpc-a123baa3",
+            "vpc-a123-baa3",
+            "vpc-a123-baa3",
+            "AWS::EC2::VPC::Id",
+        ),
+        # ("AWS::Route53::HostedZone::Id", "Z23YXV4OVPL04A", "Z23Y-XV4O-VPL04A",
+        #     "Z23Y-XV4O-VPL04A",
+        #     "AWS::Route53::HostedZone::Id"),
+        (
+            "List<AWS::EC2::AvailabilityZone::Name>",
+            "eu-west-1a, us-east-1b",
+            "eu-west-1a, xx-west-1b",
+            "xx-west-1b",
+            "AWS::EC2::AvailabilityZone::Name",
+        ),
+        (
+            "List<AWS::EC2::Image::Id>",
+            "ami-0ff8a91507f77f867, ami-0a584ac55a7631c0c",
+            "ami-0ff8a91507f77f867, ami-0a584ac55a7631c0c, mygreatimage",
+            "mygreatimage",
+            "AWS::EC2::Image::Id",
+        ),
+        (
+            "List<AWS::EC2::Instance::Id>",
+            "i-1e731a32, i-1e731a34, i-1e731a34213424fde",
+            "i-1e731a32,i-1e731a34213424fdea",
+            "i-1e731a34213424fdea",
+            "AWS::EC2::Instance::Id",
+        ),
+        # ("List<AWS::EC2::SecurityGroup::GroupName>", "my-sg-abc, my-sg-def", "", "",
+        #     "AWS::EC2::SecurityGroup::GroupName"),
+        (
+            "List<AWS::EC2::SecurityGroup::Id>",
+            "sg-a123fd85, sg-b456fd85",
+            "sg-a123fd85, sg-b456fd85jgkfmd",
+            "sg-b456fd85jgkfmd",
+            "AWS::EC2::SecurityGroup::Id",
+        ),
+        # TODO: List versions of these
+        (
+            "List<AWS::EC2::Subnet::Id>",
+            "subnet-123a351e, subnet-456b351e",
+            "subnet-123a351e, subnet-z456b351e",
+            "subnet-z456b351e",
+            "AWS::EC2::Subnet::Id",
+        ),
+        (
+            "List<AWS::EC2::Volume::Id>",
+            "vol-3cdd3f56, vol-4cdd3f56",
+            "vol-3cdd3f56, vol-4cdd3f56, vl-3cdd3f56",
+            "vl-3cdd3f56",
+            "AWS::EC2::Volume::Id",
+        ),
+        (
+            "List<AWS::EC2::VPC::Id>",
+            "vpc-a123baa3, vpc-b456baa3",
+            "vpc-a123baa3, vapc-b456baa3",
+            "vapc-b456baa3",
+            "AWS::EC2::VPC::Id",
+        ),
+        # ("AWS::Route53::HostedZone::Id", "Z23YXV4OVPL04A", "Z23Y-XV4O-VPL04A",
+        #     "Z23Y-XV4O-VPL04A",
+        #     "AWS::Route53::HostedZone::Id"),
+    ],
+)
+def test_set_params_aws_type(
+    type: str,
+    valid_input: str,
+    invalid_input: str,
+    fail_message_value: str,
+    fail_message_type: str,
+):
+    t = {
+        "Parameters": {
+            "TargetAvailabilityZones": {
+                "Type": type,
+                "Description": ("The AZ(s) we are deploying to"),
+            }
+        }
+    }
+    template = Template(t)
+
+    # Test that supplying a list of valid AZ values works
+    template.set_parameters({"TargetAvailabilityZones": valid_input})
+
+    actual_value = template.template["Parameters"]["TargetAvailabilityZones"]
+    assert (
+        valid_input == actual_value["Value"]
+    ), "Should set the value to what we pass in."
+
+    # Test the supplying an invalid AZ is rejected
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Value " + fail_message_value + " does not match the expected pattern for "
+            "parameter TargetAvailabilityZones and type " + fail_message_type
+        ),
+    ):
+        template.set_parameters({"TargetAvailabilityZones": invalid_input})
+
+
 @pytest.mark.parametrize("t", [{}, {"Metadata": {}}])
 def test_metadata(t):
     region = "us-east-1"
