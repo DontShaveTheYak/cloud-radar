@@ -459,9 +459,20 @@ def test_set_params_list_number_min_max():
             "ke-1e731a32",
             "AWS::EC2::Instance::Id",
         ),
-        # ("AWS::EC2::KeyPair::KeyName",),
-        # ("AWS::EC2::SecurityGroup::GroupName", "my-sg-abc", "", "",
-        #     "AWS::EC2::SecurityGroup::GroupName"),
+        (
+            "AWS::EC2::KeyPair::KeyName",
+            "my-nv-keypair",
+            "t" * 256,
+            "t" * 256,
+            "AWS::EC2::KeyPair::KeyName",
+        ),
+        (
+            "AWS::EC2::SecurityGroup::GroupName",
+            "my-sg-abc",
+            "'sg",
+            "'sg",
+            "AWS::EC2::SecurityGroup::GroupName",
+        ),
         (
             "AWS::EC2::SecurityGroup::Id",
             "sg-a123fd85",
@@ -497,9 +508,13 @@ def test_set_params_list_number_min_max():
             "vpc-a123-baa3",
             "AWS::EC2::VPC::Id",
         ),
-        # ("AWS::Route53::HostedZone::Id", "Z23YXV4OVPL04A", "Z23Y-XV4O-VPL04A",
-        #     "Z23Y-XV4O-VPL04A",
-        #     "AWS::Route53::HostedZone::Id"),
+        (
+            "AWS::Route53::HostedZone::Id",
+            "Z23YXV4OVPL04A",
+            "Z23Y-XV4O-VPL04A",
+            "Z23Y-XV4O-VPL04A",
+            "AWS::Route53::HostedZone::Id",
+        ),
         (
             "List<AWS::EC2::AvailabilityZone::Name>",
             "eu-west-1a, us-east-1b",
@@ -521,8 +536,13 @@ def test_set_params_list_number_min_max():
             "i-1e731a34213424fdea",
             "AWS::EC2::Instance::Id",
         ),
-        # ("List<AWS::EC2::SecurityGroup::GroupName>", "my-sg-abc, my-sg-def", "", "",
-        #     "AWS::EC2::SecurityGroup::GroupName"),
+        (
+            "List<AWS::EC2::SecurityGroup::GroupName>",
+            "my-sg-abc, my-sg-def",
+            "my-sg-abc, my-sg-def'",
+            "my-sg-def'",
+            "AWS::EC2::SecurityGroup::GroupName",
+        ),
         (
             "List<AWS::EC2::SecurityGroup::Id>",
             "sg-a123fd85, sg-b456fd85",
@@ -530,7 +550,6 @@ def test_set_params_list_number_min_max():
             "sg-b456fd85jgkfmd",
             "AWS::EC2::SecurityGroup::Id",
         ),
-        # TODO: List versions of these
         (
             "List<AWS::EC2::Subnet::Id>",
             "subnet-123a351e, subnet-456b351e",
@@ -552,9 +571,13 @@ def test_set_params_list_number_min_max():
             "vapc-b456baa3",
             "AWS::EC2::VPC::Id",
         ),
-        # ("AWS::Route53::HostedZone::Id", "Z23YXV4OVPL04A", "Z23Y-XV4O-VPL04A",
-        #     "Z23Y-XV4O-VPL04A",
-        #     "AWS::Route53::HostedZone::Id"),
+        (
+            "List<AWS::Route53::HostedZone::Id>",
+            "Z23YXV4OVPL04A, Z23YXV4OVPL04B",
+            "Z23YXV4OVPL04B, Z23Y-XV4O-VPL04A",
+            "Z23Y-XV4O-VPL04A",
+            "AWS::Route53::HostedZone::Id",
+        ),
     ],
 )
 def test_set_params_aws_type(
