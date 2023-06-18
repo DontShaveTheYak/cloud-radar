@@ -466,7 +466,7 @@ def validate_aws_parameter_constraints(
             "^(af|ap|ca|eu|me|sa|us)-(central|north|(north(?:east|west))|"
             "south|south(?:east|west)|east|west)-[0-9]+[a-z]{1}$"
         ),
-        # Reference for the next two are
+        # Reference for the next few are
         # https://blog.skeddly.com/2016/01/long-ec2-instance-ids-are-fully-supported.html
         "AWS::EC2::Image::Id": "^ami-[a-f0-9]{8}([a-f0-9]{9})?$",
         "AWS::EC2::Instance::Id": "^i-[a-f0-9]{8}([a-f0-9]{9})?$",
@@ -474,6 +474,14 @@ def validate_aws_parameter_constraints(
         "AWS::EC2::Subnet::Id": "^subnet-[a-f0-9]{8}([a-f0-9]{9})?$",
         "AWS::EC2::VPC::Id": "^vpc-[a-f0-9]{8}([a-f0-9]{9})?$",
         "AWS::EC2::Volume::Id": "^vol-[a-f0-9]{8}([a-f0-9]{9})?$",
+        # Reference for this was
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-groupname
+        "AWS::EC2::SecurityGroup::GroupName": r"^[a-zA-Z0-9 ._\-:\/()#,@\[\]+=&;{}!$*]{1,255}$",
+        # Bit of a guess this one, not sure what the minimum bound should be
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html#cfn-route53-recordset-hostedzoneid
+        "AWS::Route53::HostedZone::Id": "^[A-Z0-9]{,32}$",
+        # All the docs say for this type is up to 255 ascii characters
+        "AWS::EC2::KeyPair::KeyName": "^[ -~]{1,255}$",
     }
     param_regex = parameter_type_regexes.get(parameter_type)
 
