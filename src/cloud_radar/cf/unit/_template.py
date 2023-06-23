@@ -300,48 +300,49 @@ class Template:
             found in the configuration
         """
 
-        if "{{resolve:" in data:
-            matches = re.search(
-                "{{(resolve:(ssm|ssm-secure|secretsmanager):[a-zA-Z0-9_.-/:]+)}}",
-                data,
+        if "${" in data:
+            # If the value contains a "${" then it is likely we are meant to
+            # apply other functions to it before processing the result (like
+            # a Fn::Sub first to include an AWS account ID)
+            return data
+
+        if "{{resolve:" not in data:
+            # This is not a dynamic reference so just return the string
+            return data
+
+        matches = re.search(
+            r"{{resolve:([^:]+):(.*?)}}",
+            data,
+        )
+
+        if not matches:
+            raise ValueError(
+                f"Found '{{{{resolve' in string, but did not match expected regex - {data}"
             )
 
-            if matches:
-                parts = matches.group(1).split(":", 2)
+        service = matches.group(1)
+        key = matches.group(2)
 
-                service = parts[1]
-                key = parts[2]
-
-                if service not in self.dynamic_references:
-                    raise KeyError(
-                        f"Service {service} not included in dynamic references configuration"
-                    )
-                if key not in self.dynamic_references[service]:
-                    raise KeyError(
-                        (
-                            f"Key {key} not included in dynamic references "
-                            f"configuration for service {service}"
-                        )
-                    )
-
-                updated_value = data.replace(
-                    f"{{{{resolve:{service}:{key}}}}}",
-                    self.dynamic_references[service][key],
+        if service not in self.dynamic_references:
+            raise KeyError(
+                f"Service {service} not included in dynamic references configuration"
+            )
+        if key not in self.dynamic_references[service]:
+            raise KeyError(
+                (
+                    f"Key {key} not included in dynamic references "
+                    f"configuration for service {service}"
                 )
+            )
 
-                # run the updated value through this function again
-                # to pick up any other references
-                return self.resolve_dynamic_references(updated_value)
-            elif "${" not in data:
-                # If there is a "${" in the string it is likely we are meant to
-                # apply other functions to it before processing the result (like
-                # a Fn::Sub first to include an AWS account ID)
-                raise ValueError(
-                    "Found '{{resolve' in string, but did not match expected regex - %s",
-                    data,
-                )
+        updated_value = data.replace(
+            f"{{{{resolve:{service}:{key}}}}}",
+            self.dynamic_references[service][key],
+        )
 
-        return data
+        # run the updated value through this function again
+        # to pick up any other references
+        return self.resolve_dynamic_references(updated_value)
 
     def set_parameters(self, parameters: Union[Dict[str, str], None] = None) -> None:
         """Sets the parameters for a template using the provided parameters or
@@ -402,6 +403,7 @@ def validate_parameter_constraints(
                                     against
         parameter_value (str): The supplied parameter value being validated
     """
+
     if parameter_definition["Type"] == "String":
         validate_string_parameter_constraints(
             parameter_name, parameter_definition, parameter_value
@@ -417,14 +419,84 @@ def validate_parameter_constraints(
         validate_number_parameter_constraints(
             parameter_name, parameter_definition, parameter_value
         )
-    elif parameter_definition["Type"] == "List<Number>":
-        # The docs are not as clear here but I think it will be
-        # the same as CommaDelimitedList - run the number parameter
-        # constraints for each item in the list
+    elif parameter_definition["Type"].startswith("AWS::"):
+        validate_aws_parameter_constraints(
+            parameter_name, parameter_definition["Type"], parameter_value
+        )
+    elif parameter_definition["Type"].startswith("List<"):
+        # All list types runs the single value validation for all items
+        trimmed_type = parameter_definition["Type"][5:-1]
+
+        # There are a couple though that are not supported
+        if trimmed_type == "AWS::EC2::KeyPair::KeyName" or trimmed_type == "String":
+            # this is a type that isn't valid as a list, but is
+            # as a single item
+            raise ValueError(f"Type {trimmed_type} is not valid in a List<>")
+
+        # Iterate over each item and call this method again with an
+        # updated definition for the non-list type
+        updated_defintion = parameter_definition.copy()
+        updated_defintion["Type"] = trimmed_type
+
         for part in parameter_value.split(","):
-            validate_number_parameter_constraints(
-                parameter_name, parameter_definition, part.strip()
+            validate_parameter_constraints(
+                parameter_name, updated_defintion, part.strip()
             )
+
+
+def validate_aws_parameter_constraints(
+    parameter_name: str, parameter_type: str, parameter_value: str
+):
+    """
+    Validate that the parameter value matches any constraints
+    that are applicable for an AWS type parameter
+
+    This method will raise a ValueError if any validation constraints
+    are not met.
+    Args:
+        parameter_name (str): The name of the parameter being validated
+        parameter_type (str): The AWS type of the parameter being validated
+                                    against
+        parameter_value (str): The supplied parameter value being validated
+    """
+
+    parameter_type_regexes = {
+        # Reference for this was
+        # https://gist.github.com/rams3sh/4858d5150acba5383dd697fda54dda2c
+        "AWS::EC2::AvailabilityZone::Name": (
+            "^(af|ap|ca|eu|me|sa|us)-(central|north|(north(?:east|west))|"
+            "south|south(?:east|west)|east|west)-[0-9]+[a-z]{1}$"
+        ),
+        # Reference for the next few are
+        # https://blog.skeddly.com/2016/01/long-ec2-instance-ids-are-fully-supported.html
+        "AWS::EC2::Image::Id": "^ami-[a-f0-9]{8}([a-f0-9]{9})?$",
+        "AWS::EC2::Instance::Id": "^i-[a-f0-9]{8}([a-f0-9]{9})?$",
+        "AWS::EC2::SecurityGroup::Id": "^sg-[a-f0-9]{8}([a-f0-9]{9})?$",
+        "AWS::EC2::Subnet::Id": "^subnet-[a-f0-9]{8}([a-f0-9]{9})?$",
+        "AWS::EC2::VPC::Id": "^vpc-[a-f0-9]{8}([a-f0-9]{9})?$",
+        "AWS::EC2::Volume::Id": "^vol-[a-f0-9]{8}([a-f0-9]{9})?$",
+        # Reference for this was
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-groupname
+        "AWS::EC2::SecurityGroup::GroupName": r"^[a-zA-Z0-9 ._\-:\/()#,@\[\]+=&;{}!$*]{1,255}$",
+        # Bit of a guess this one, not sure what the minimum bound should be
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html#cfn-route53-recordset-hostedzoneid
+        "AWS::Route53::HostedZone::Id": "^[A-Z0-9]{,32}$",
+        # All the docs say for this type is up to 255 ascii characters
+        "AWS::EC2::KeyPair::KeyName": "^[ -~]{1,255}$",
+    }
+    param_regex = parameter_type_regexes.get(parameter_type)
+
+    if param_regex is None:
+        # If a regex is defined, we know the regex to validate the parameter
+        raise KeyError(f"Unsupported parameter type {parameter_type}")
+
+    if not re.match(param_regex, parameter_value):
+        raise ValueError(
+            (
+                f"Value {parameter_value} does not match the expected pattern "
+                f"for parameter {parameter_name} and type {parameter_type}"
+            )
+        )
 
 
 def validate_number_parameter_constraints(

@@ -341,6 +341,7 @@ Levi - [@shady_cuz](https://twitter.com/shady_cuz)
 * [Taskcat](https://aws-quickstart.github.io/taskcat/)
 * [Hypermodern Python](https://cjolowicz.github.io/posts/hypermodern-python-01-setup/)
 * [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
+* @dhutchison - He was the first contributor to this project and finished the last couple of features to make this project complete. Thank you!
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
