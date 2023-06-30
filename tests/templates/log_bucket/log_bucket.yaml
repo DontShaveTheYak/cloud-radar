@@ -38,6 +38,10 @@ Resources:
       BucketName:
         !Sub ${BucketPrefix}-logs-${AWS::Region}
 
+  DeadLetterQueue:
+    Condition: AlwaysTrue
+    Type: AWS::SQS::Queue
+
   # Used for testng
   TestBucket:
     Condition: AlwaysFalse
