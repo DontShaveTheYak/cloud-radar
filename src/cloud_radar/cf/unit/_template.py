@@ -151,6 +151,12 @@ class Template:
                 continue
 
             for r_name, r_value in get_section_items(template, section):
+                if section == "Resources" and "Properties" not in r_value:
+                    # While the Properties key is technically optional,
+                    # our processing requires it to be there to distinguish
+                    # this as a Resource when we perform further rendering
+                    r_value["Properties"] = {}
+
                 if is_conditional(r_value):
                     condition_value = get_condition_value(
                         r_value["Condition"], template["Conditions"]
