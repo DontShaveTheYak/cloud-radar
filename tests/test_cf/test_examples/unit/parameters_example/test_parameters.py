@@ -43,12 +43,52 @@ def read_params_codepipeline_format(config: dict) -> dict:
     return config["Parameters"]
 
 
+def read_params_cloudformation_format(config: dict) -> dict:
+    """
+    Helper method to convert a CloudFormation CLI like parameter
+    file format into the Key Value one expected by Cloud Radar.
+
+    Takes something in the format:
+    [
+        {
+            "ParameterKey": "Key1",
+            "ParameterValue": "Value1"
+        },
+        {
+            "ParameterKey": "Key2",
+            "ParameterValue": "Value2"
+        }
+    ]
+
+    And turns it in to:
+    {
+        "Key1": "Value1",
+        "Key2": "Value2
+    }
+
+    """
+
+    params = {}
+    for param in config:
+        params[param["ParameterKey"]] = param["ParameterValue"]
+
+    return params
+
+
 # def read_params_
 
 # def convert_params_cloudformation_format
 
 
 def test_valid_params(template: Template):
+    """
+    This test case loads a CodePipeline style configuration file
+    with a parameter value which meets all the validation criteria.
+
+    This should create the stack successfully and we should be able to
+    inspect the properties of the resource to see the parameter value
+    has been applied successfully.
+    """
     config = load_config("valid_params.json")
 
     stack = template.create_stack(config["Parameters"])
@@ -60,8 +100,8 @@ def test_valid_params(template: Template):
     assert login_profile_props["Password"] == "aSuperSecurePassword"
 
 
-def test_invalid_params(template: Template):
-    config = load_config("invalid_params.json")
+def test_invalid_params_length(template: Template):
+    config = load_config("invalid_params_length.json")
 
     with pytest.raises(
         ValueError,
@@ -71,3 +111,30 @@ def test_invalid_params(template: Template):
         ),
     ):
         template.create_stack(config["Parameters"])
+
+
+def test_invalid_params_regex(template: Template):
+    config = load_config("invalid_params_regex.cf.json")
+
+    # This example uses the CloudFormation like CLI
+    # configuration format
+    # https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/deploy/index.html#supported-json-syntax
+    # So we use this method to convert it into this format before passing to the
+    # create stack method.
+    #
+    # {
+    #   "Key": "Value"
+    # }
+    params = read_params_cloudformation_format(config)
+
+    # Validate that the input we expect not to match our AllowedPattern constraint
+    # results in the expected error.
+    # Note that if special characters are going to appear in the expected error message
+    # you may need to escape them in the `match` value.
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Value Abhd%k\* does not match the AllowedPattern for parameter Password"
+        ),
+    ):
+        template.create_stack(params)

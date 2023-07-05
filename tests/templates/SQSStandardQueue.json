@@ -52,6 +52,7 @@
         "SQSQueue": {
             "Type": "AWS::SQS::Queue",
             "Properties": {
+                "QueueName": "my-queue",
                 "DelaySeconds": {
                     "Ref": "DelaySeconds"
                 },
@@ -88,7 +89,10 @@
         },
         "MyDeadLetterQueue": {
             "Condition": "CreateDeadLetterQueue",
-            "Type": "AWS::SQS::Queue"
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "QueueName": "my-dlq-queue"
+            }
         }
     },
     "Outputs": {

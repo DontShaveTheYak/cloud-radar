@@ -1,5 +1,7 @@
 # Example file taken from
 # https://github.com/awslabs/aws-cloudformation-templates/blob/master/aws/services/IAM/IAM_Users_Groups_and_Policies.yaml
+#
+# This has been modified to add an AllowedPattern to the Password parameter
 AWSTemplateFormatVersion: '2010-09-09'
 Metadata:
   License: Apache-2.0
@@ -22,7 +24,8 @@ Parameters:
     Description: New account password
     MinLength: '1'
     MaxLength: '41'
-    ConstraintDescription: the password must be between 1 and 41 characters
+    ConstraintDescription: the password must be between 1 and 41 characters, alphanumeric
+    AllowedPattern: "^[a-zA-Z0-9]*$"
 Resources:
   CFNUser:
     Type: AWS::IAM::User
