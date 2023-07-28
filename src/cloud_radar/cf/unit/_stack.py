@@ -132,6 +132,25 @@ class Stack(UserDict):
 
         return resource
 
+    def get_resources_of_type(self, resource_type: str):
+        """
+        Get all resources defined in the 'Resources' section of the
+        template with a given type.
+
+        This returns a dict of resource name to the resource.
+
+        Args:
+            resource_type (str): the cloudformation resource type to find
+        """
+
+        resources = self.data.get("Resources", {})
+        return dict(
+            filter(
+                lambda item: item[1]["Type"] == resource_type,
+                resources.items(),
+            )
+        )
+
     def has_output(self, output_name: str):
         """Tests that an output is defined in the 'Outputs' section of the template.
 
