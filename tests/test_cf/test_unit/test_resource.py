@@ -77,7 +77,7 @@ def test_resource_assert_propeties_is(stack: Stack):
 
     with pytest.raises(
         AssertionError,
-        match="Resource 'LogsBucket' acutal properties did not match input properties",
+        match="Resource 'LogsBucket' actual properties did not match input properties",
     ):
         resource.assert_propeties_is({"test": "test"})
 
