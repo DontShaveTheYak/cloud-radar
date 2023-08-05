@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -31,7 +32,7 @@ def test_naming_conventions(stack: Stack):
     #
     # This defines all the resource types we want to check, the pattern to match,
     # and either the details of the Tag or Property that the name is held in.
-    known_naming_conventions = {
+    type_patterns = {
         "AWS::EFS::FileSystem": {
             "Tag": "Name",
             # This TagProperty is optional. The default is 'Tags',
@@ -54,7 +55,42 @@ def test_naming_conventions(stack: Stack):
         },
     }
 
-    stack.assert_resource_type_property_value_conventions(known_naming_conventions)
+    stack.assert_resource_type_property_value_conventions(type_patterns)
+
+
+def test_not_matching_pattern(stack: Stack):
+    """
+    This test validates that if a resource is encountered that does not match the
+    defined pattern, the correct assertion error is raised.
+
+    Args:
+            stack (Stack): the stack being used for these test examples
+    """
+
+    type_patterns = {
+        "AWS::EFS::FileSystem": {
+            "Tag": "Name",
+            "TagProperty": "FileSystemTags",
+            "Pattern": r"^[a-z0-9-]*-FAIL$",
+        },
+        "AWS::S3::Bucket": {
+            "Property": "BucketName",
+            "Pattern": r"^[a-z0-9-]*-xx-west-3[a-z0-9-]*$",
+        },
+    }
+
+    with pytest.raises(
+        AssertionError,
+        match=re.escape(
+            (
+                "Resource 'rFileSystem' tag 'Name' value 'my-test-xx-west-3-vol' "
+                "did not match expected pattern '^[a-z0-9-]*-FAIL$'."
+            )
+        ),
+    ):
+        stack.assert_resource_type_property_value_conventions(
+            type_patterns, fail_on_missing_type=False
+        )
 
 
 def test_missing_convention(stack: Stack):
