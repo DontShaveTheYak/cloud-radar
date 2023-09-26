@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
+import json
 import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
@@ -108,15 +109,20 @@ class Template:
         return cls(template, imports, dynamic_references)
 
     def render(
-        self, params: Optional[Dict[str, str]] = None, region: Optional[str] = None
+        self,
+        params: Optional[Dict[str, str]] = None,
+        region: Optional[str] = None,
+        parameters_file: Optional[str] = None,
     ) -> dict:
         """Solves all conditionals, references and pseudo variables using
         the passed in parameters. After rendering the template all resources
-        that wouldn't get deployed because of a condtion statement are removed.
+        that wouldn't get deployed because of a condition statement are removed.
 
         Args:
             params (dict, optional): Parameter names and values to be used when rendering.
             region (str, optional): The region is used for the AWS::Region pseudo variable. Defaults to "us-east-1".
+            parameters_file (str, optional): Path to a parameters file to load. If this is supplied as well as params,
+                                    anything in params will take precedence.
 
         Returns:
             dict: The rendered template.
@@ -124,6 +130,15 @@ class Template:
 
         if region:
             self.Region = region
+
+        if parameters_file:
+            # Attempt to load params from a file.
+            loaded_params = self.load_params(parameters_file)
+            # If a file and a parameter dict were supplied, the parameter dict will take precedence.
+            if params:
+                loaded_params.update(params)
+
+            params = loaded_params
 
         self.template = yaml.load(self.raw, Loader=yaml.FullLoader)
         self.set_parameters(params)
@@ -135,6 +150,50 @@ class Template:
         self.template = self.remove_condtional_resources(self.template)
 
         return self.template
+
+    def load_params(self, parameter_file_path) -> Dict[str, Any]:
+        # There are ??? main formats for configuration files which are used by different AWS tools.
+        # All of these are JSON based, but are formatted differently internally.
+        # We want to look for hints and get out a common format.
+
+        with parameter_file_path.open() as f:
+            json_content = json.load(f)
+
+            if "Parameters" in json_content:
+                # This is a CodePipeline CloudFormation artifact format file
+                # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/continuous-delivery-codepipeline-cfn-artifacts.html#w4ab1c21c15c15
+                return json_content["Parameters"]
+
+            if type(json_content) == list and "ParameterKey" in json_content[0]:
+                # This file looks like the type of parameters that the CloudFormation
+                # CLI supports
+                # https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/create-stack.html
+
+                # Takes something in the format:
+                #     [
+                #         {
+                #             "ParameterKey": "Key1",
+                #             "ParameterValue": "Value1"
+                #         },
+                #         {
+                #             "ParameterKey": "Key2",
+                #             "ParameterValue": "Value2"
+                #         }
+                #     ]
+                #
+                #     And turns it in to:
+                #     {
+                #         "Key1": "Value1",
+                #         "Key2": "Value2
+                #     }
+                params = {}
+                for param in json_content:
+                    params[param["ParameterKey"]] = param["ParameterValue"]
+
+                return params
+
+            # If we get this far then we do not support this type of configuration file
+            raise ValueError("Parameter file is not in a supported format")
 
     def render_all_sections(self, template: Dict[str, Any]) -> Dict[str, Any]:
         """Solves all conditionals, references and pseudo variables for all sections"""
@@ -199,12 +258,15 @@ class Template:
         return template
 
     def create_stack(
-        self, params: Optional[Dict[str, str]] = None, region: Optional[str] = None
+        self,
+        params: Optional[Dict[str, str]] = None,
+        region: Optional[str] = None,
+        parameters_file: Optional[str] = None,
     ):
         if region:
             self.Region = region
 
-        self.render(params)
+        self.render(params, parameters_file=parameters_file)
 
         stack = Stack(self.template)
 
@@ -379,6 +441,21 @@ class Template:
             raise ValueError("You passed a Parameter that was not in the Template.")
 
         for p_name, p_value in t_params.items():
+            # TODO: Need to add something in here for if the parameter type
+            # is one of the SSM ones, so that it can call
+            # self.dynamic_references["ssm"][key] to get the value
+            #
+            # TODO: also need to validate that the key actually exists to
+            # provide a helpful error message instance of just a KeyError
+
+            # if key not in self.dynamic_references[service]:
+            #   raise KeyError(
+            #       (
+            #           f"Key {key} not included in dynamic references "
+            #           f"configuration for service {service}"
+            #       )
+            #   )
+
             if p_name in parameters:
                 validate_parameter_constraints(
                     p_name, t_params[p_name], parameters[p_name]
@@ -441,12 +518,12 @@ def validate_parameter_constraints(
 
         # Iterate over each item and call this method again with an
         # updated definition for the non-list type
-        updated_defintion = parameter_definition.copy()
-        updated_defintion["Type"] = trimmed_type
+        updated_definition = parameter_definition.copy()
+        updated_definition["Type"] = trimmed_type
 
         for part in parameter_value.split(","):
             validate_parameter_constraints(
-                parameter_name, updated_defintion, part.strip()
+                parameter_name, updated_definition, part.strip()
             )
 
 
@@ -466,43 +543,97 @@ def validate_aws_parameter_constraints(
         parameter_value (str): The supplied parameter value being validated
     """
 
-    parameter_type_regexes = {
-        # Reference for this was
-        # https://gist.github.com/rams3sh/4858d5150acba5383dd697fda54dda2c
-        "AWS::EC2::AvailabilityZone::Name": (
-            "^(af|ap|ca|eu|me|sa|us)-(central|north|(north(?:east|west))|"
-            "south|south(?:east|west)|east|west)-[0-9]+[a-z]{1}$"
-        ),
-        # Reference for the next few are
-        # https://blog.skeddly.com/2016/01/long-ec2-instance-ids-are-fully-supported.html
-        "AWS::EC2::Image::Id": "^ami-[a-f0-9]{8}([a-f0-9]{9})?$",
-        "AWS::EC2::Instance::Id": "^i-[a-f0-9]{8}([a-f0-9]{9})?$",
-        "AWS::EC2::SecurityGroup::Id": "^sg-[a-f0-9]{8}([a-f0-9]{9})?$",
-        "AWS::EC2::Subnet::Id": "^subnet-[a-f0-9]{8}([a-f0-9]{9})?$",
-        "AWS::EC2::VPC::Id": "^vpc-[a-f0-9]{8}([a-f0-9]{9})?$",
-        "AWS::EC2::Volume::Id": "^vol-[a-f0-9]{8}([a-f0-9]{9})?$",
-        # Reference for this was
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-groupname
-        "AWS::EC2::SecurityGroup::GroupName": r"^[a-zA-Z0-9 ._\-:\/()#,@\[\]+=&;{}!$*]{1,255}$",
-        # Bit of a guess this one, not sure what the minimum bound should be
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html#cfn-route53-recordset-hostedzoneid
-        "AWS::Route53::HostedZone::Id": "^[A-Z0-9]{,32}$",
-        # All the docs say for this type is up to 255 ascii characters
-        "AWS::EC2::KeyPair::KeyName": "^[ -~]{1,255}$",
-    }
-    param_regex = parameter_type_regexes.get(parameter_type)
+    # There are a few variants of SSM parameters, but they all have the
+    # same regex pattern
+    ssm_parameter_value_regex = r"^(/{0,1}(?!/))[A-Za-z0-9/-_]+(.([a-zA-Z]+))?$"
 
-    if param_regex is None:
-        # If a regex is defined, we know the regex to validate the parameter
-        raise KeyError(f"Unsupported parameter type {parameter_type}")
+    if parameter_type.startswith("AWS::SSM::Parameter::Value<"):
+        # TODO validate that the value in the angle brackets is a supported one
 
-    if not re.match(param_regex, parameter_value):
-        raise ValueError(
-            (
-                f"Value {parameter_value} does not match the expected pattern "
-                f"for parameter {parameter_name} and type {parameter_type}"
+        supported_ssm_value_types = [
+            "String",
+            "List<String>",
+            "CommaDelimitedList",
+            "AWS::EC2::AvailabilityZone::Name",
+            "AWS::EC2::Image::Id",
+            "AWS::EC2::Instance::Id",
+            "AWS::EC2::SecurityGroup::Id",
+            "AWS::EC2::Subnet::Id",
+            "AWS::EC2::VPC::Id",
+            "AWS::EC2::Volume::Id",
+            "AWS::EC2::SecurityGroup::GroupName",
+            "AWS::Route53::HostedZone::Id"
+            "AWS::EC2::KeyPair::KeyName"
+            "List<AWS::EC2::AvailabilityZone::Name>",
+            "List<AWS::EC2::Image::Id>",
+            "List<AWS::EC2::Instance::Id>",
+            "List<AWS::EC2::SecurityGroup::Id>",
+            "List<AWS::EC2::Subnet::Id>",
+            "List<AWS::EC2::VPC::Id>",
+            "List<AWS::EC2::Volume::Id>",
+            "List<AWS::EC2::SecurityGroup::GroupName>",
+            "List<AWS::Route53::HostedZone::Id>" "List<AWS::EC2::KeyPair::KeyName>",
+        ]
+
+        value_type = parameter_type[27:-1]
+        if value_type not in supported_ssm_value_types:
+            raise ValueError(
+                (
+                    f"Type {value_type} is not a supported SSM value type for "
+                    f" SSM parameter {parameter_name}"
+                )
             )
-        )
+
+        if not re.match(ssm_parameter_value_regex, parameter_value):
+            raise ValueError(
+                (
+                    f"Value {parameter_value} does not match the expected pattern "
+                    f"for SSM parameter {parameter_name}"
+                )
+            )
+
+    else:
+        # Other AWS parameter types
+
+        parameter_type_regexes = {
+            # Reference for this was
+            # https://gist.github.com/rams3sh/4858d5150acba5383dd697fda54dda2c
+            "AWS::EC2::AvailabilityZone::Name": (
+                "^(af|ap|ca|eu|me|sa|us)-(central|north|(north(?:east|west))|"
+                "south|south(?:east|west)|east|west)-[0-9]+[a-z]{1}$"
+            ),
+            # Reference for the next few are
+            # https://blog.skeddly.com/2016/01/long-ec2-instance-ids-are-fully-supported.html
+            "AWS::EC2::Image::Id": "^ami-[a-f0-9]{8}([a-f0-9]{9})?$",
+            "AWS::EC2::Instance::Id": "^i-[a-f0-9]{8}([a-f0-9]{9})?$",
+            "AWS::EC2::SecurityGroup::Id": "^sg-[a-f0-9]{8}([a-f0-9]{9})?$",
+            "AWS::EC2::Subnet::Id": "^subnet-[a-f0-9]{8}([a-f0-9]{9})?$",
+            "AWS::EC2::VPC::Id": "^vpc-[a-f0-9]{8}([a-f0-9]{9})?$",
+            "AWS::EC2::Volume::Id": "^vol-[a-f0-9]{8}([a-f0-9]{9})?$",
+            # Reference for this was
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-groupname
+            "AWS::EC2::SecurityGroup::GroupName": r"^[a-zA-Z0-9 ._\-:\/()#,@\[\]+=&;{}!$*]{1,255}$",
+            # Bit of a guess this one, not sure what the minimum bound should be
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html#cfn-route53-recordset-hostedzoneid
+            "AWS::Route53::HostedZone::Id": "^[A-Z0-9]{,32}$",
+            # All the docs say for this type is up to 255 ascii characters
+            "AWS::EC2::KeyPair::KeyName": "^[ -~]{1,255}$",
+            # TODO: Validate this elsewhere too, common regex?
+            "AWS::SSM::Parameter::Name": ssm_parameter_value_regex,
+        }
+        param_regex = parameter_type_regexes.get(parameter_type)
+
+        if param_regex is None:
+            # If a regex is defined, we know the regex to validate the parameter
+            raise KeyError(f"Unsupported parameter type {parameter_type}")
+
+        if not re.match(param_regex, parameter_value):
+            raise ValueError(
+                (
+                    f"Value {parameter_value} does not match the expected pattern "
+                    f"for parameter {parameter_name} and type {parameter_type}"
+                )
+            )
 
 
 def validate_number_parameter_constraints(
