@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import pytest
@@ -20,7 +19,15 @@ def template():
     # your unit tests.
     template_path = Path(__file__).parent / "SSM_Parameter_example.yaml"
 
-    return Template.from_yaml(template_path.resolve(), {})
+    return Template.from_yaml(
+        template_path.resolve(),
+        dynamic_references={
+            "ssm": {
+                "/my_parameters/database/name": "my-great-database",
+                "/my_parameters/bucket/name": "my-great-s3-bucket",
+            }
+        },
+    )
 
 
 def test_default_values(template: Template):
@@ -34,11 +41,18 @@ def test_default_values(template: Template):
     # has been substituted
     table_resource = stack.get_resource("MyTable")
 
-    # Assert that the SSM parameter is resolved based on our dynamic reference
-    # lookup.
+    # Assert that the SSM parameter used in a Ref is resolved based on our
+    # dynamic reference lookup.
     database_name_value = table_resource.get_property_value("DatabaseName")
 
-    assert database_name_value == "my-test-database"
+    assert database_name_value == "my-great-database"
+
+    # Assert that the SSM parameter used in a Sub is resolved based on the
+    # lookup
+    # TODO: Nested property value lookup would help here
+    table_input = table_resource.get_property_value("TableInput")
+    location = table_input["StorageDescriptor"]["Location"]
+    assert location == "s3://my-great-s3-bucket/test"
 
 
 def test_invalid_ssm_pattern(template: Template):
