@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
-import json
 import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
@@ -134,7 +134,8 @@ class Template:
         if parameters_file:
             # Attempt to load params from a file.
             loaded_params = self.load_params(parameters_file)
-            # If a file and a parameter dict were supplied, the parameter dict will take precedence.
+            # If a file and a parameter dict were supplied,
+            # the parameter dict will take precedence.
             if params:
                 loaded_params.update(params)
 
@@ -152,7 +153,8 @@ class Template:
         return self.template
 
     def load_params(self, parameter_file_path) -> Dict[str, Any]:
-        # There are ??? main formats for configuration files which are used by different AWS tools.
+        # There are ??? main formats for configuration files which are used by
+        # different AWS tools.
         # All of these are JSON based, but are formatted differently internally.
         # We want to look for hints and get out a common format.
 
@@ -164,7 +166,7 @@ class Template:
                 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/continuous-delivery-codepipeline-cfn-artifacts.html#w4ab1c21c15c15
                 return json_content["Parameters"]
 
-            if type(json_content) == list and "ParameterKey" in json_content[0]:
+            if isinstance(json_content, list) and "ParameterKey" in json_content[0]:
                 # This file looks like the type of parameters that the CloudFormation
                 # CLI supports
                 # https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/create-stack.html
@@ -391,6 +393,32 @@ class Template:
         service = matches.group(1)
         key = matches.group(2)
 
+        dynamic_reference_value = self._get_dynamic_reference_value(service, key)
+
+        updated_value = data.replace(
+            f"{{{{resolve:{service}:{key}}}}}",
+            dynamic_reference_value,
+        )
+
+        # run the updated value through this function again
+        # to pick up any other references
+        return self.resolve_dynamic_references(updated_value)
+
+    def _get_dynamic_reference_value(self, service: str, key: str) -> str:
+        """
+        Gets a value from the dynamic references map.
+
+        This will raise errors if the specified service / key is not in the map.
+
+        Args:
+            service (str): the service the reference is for
+            key (str): the parameter key
+
+        Raises:
+            KeyError: if the service does not exist in the dynamic references map
+            KeyError: if the key does not exist in the dynamic references map for the service
+        """
+
         if service not in self.dynamic_references:
             raise KeyError(
                 f"Service {service} not included in dynamic references configuration"
@@ -403,14 +431,7 @@ class Template:
                 )
             )
 
-        updated_value = data.replace(
-            f"{{{{resolve:{service}:{key}}}}}",
-            self.dynamic_references[service][key],
-        )
-
-        # run the updated value through this function again
-        # to pick up any other references
-        return self.resolve_dynamic_references(updated_value)
+        return self.dynamic_references[service][key]
 
     def set_parameters(self, parameters: Union[Dict[str, str], None] = None) -> None:
         """Sets the parameters for a template using the provided parameters or
@@ -448,6 +469,9 @@ class Template:
             # TODO: also need to validate that the key actually exists to
             # provide a helpful error message instance of just a KeyError
 
+            #
+            #
+
             # if key not in self.dynamic_references[service]:
             #   raise KeyError(
             #       (
@@ -461,6 +485,10 @@ class Template:
                     p_name, t_params[p_name], parameters[p_name]
                 )
 
+                # So roughly, this line needs to look at the type,
+                # OR DOES IT
+                # Should processing of t_params consider dynamic reference resolution?
+                # Then that would handle the defaults too
                 t_params[p_name]["Value"] = parameters[p_name]
                 continue
 
@@ -548,7 +576,8 @@ def validate_aws_parameter_constraints(
     ssm_parameter_value_regex = r"^(/{0,1}(?!/))[A-Za-z0-9/-_]+(.([a-zA-Z]+))?$"
 
     if parameter_type.startswith("AWS::SSM::Parameter::Value<"):
-        # TODO validate that the value in the angle brackets is a supported one
+        # SSM parameter, need to validate that the type in the angle brackets
+        # is a supported one
 
         supported_ssm_value_types = [
             "String",
@@ -611,10 +640,10 @@ def validate_aws_parameter_constraints(
             "AWS::EC2::VPC::Id": "^vpc-[a-f0-9]{8}([a-f0-9]{9})?$",
             "AWS::EC2::Volume::Id": "^vol-[a-f0-9]{8}([a-f0-9]{9})?$",
             # Reference for this was
-            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-groupname
-            "AWS::EC2::SecurityGroup::GroupName": r"^[a-zA-Z0-9 ._\-:\/()#,@\[\]+=&;{}!$*]{1,255}$",
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-groupname # noqa B950
+            "AWS::EC2::SecurityGroup::GroupName": r"^[a-zA-Z0-9 ._\-:\/()#,@\[\]+=&;{}!$*]{1,255}$",  # noqa B950
             # Bit of a guess this one, not sure what the minimum bound should be
-            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html#cfn-route53-recordset-hostedzoneid
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html#cfn-route53-recordset-hostedzoneid # noqa B950
             "AWS::Route53::HostedZone::Id": "^[A-Z0-9]{,32}$",
             # All the docs say for this type is up to 255 ascii characters
             "AWS::EC2::KeyPair::KeyName": "^[ -~]{1,255}$",

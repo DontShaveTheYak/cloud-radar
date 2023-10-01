@@ -8,7 +8,9 @@ import base64 as b64
 import ipaddress
 import json
 import re
-from typing import Any, Callable, Dict, List, TYPE_CHECKING
+
+# Flake8 and isort disagree on this order
+from typing import TYPE_CHECKING, Any, Callable, Dict, List  # noqa I101
 
 import requests
 
@@ -752,6 +754,21 @@ def ref(template: "Template", var_name: str) -> Any:
 
     if "Parameters" in template.template:
         if var_name in template.template["Parameters"]:
+            param_def = template.template["Parameters"][var_name]
+            if "Type" in param_def and param_def["Type"].startswith(
+                "AWS::SSM::Parameter::Value<"
+            ):
+                # This is an SSM parameter value, look it up from our dynamic references
+                return template._get_dynamic_reference_value(
+                    "ssm", template.template["Parameters"][var_name]["Value"]
+                )
+
+            # If we get this far, regular parameter value to lookup & return
+            # TODO: doing it here feels like it will mean we need the logic in
+            # multiple places, and that we wouldn't be able to validate the values
+            # in the resolved value against the AWS types (would we want to do that though,
+            # sounds like a step too far in reality)
+
             return template.template["Parameters"][var_name]["Value"]
 
     if var_name in template.template["Resources"]:

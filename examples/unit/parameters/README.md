@@ -10,7 +10,7 @@ This supports all the types of CloudFormation parameters:
 * [SSM Parameter Types](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-ssm-parameter-types)
 
 
-You can use this feature to validate that any parameter configuration files are valid, and also use assertions to confirm that invalid values would be rejected. Parameters can either be supplied as a `dict` of Key/Value pairs, or loaded from configuration files. At this point the [CodePipeline artifact](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/deploy/index.html#supported-json-syntax) and [CloudFormation CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/create-stack.html) formats.
+You can use this feature to validate that any parameter configuration files are valid, and also use assertions to confirm that invalid values would be rejected. Parameters can either be supplied as a `dict` of Key/Value pairs, or loaded from configuration files. At this point the [CodePipeline artifact](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/deploy/index.html#supported-json-syntax) and [CloudFormation CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/create-stack.html) formats can be loaded in from files.
 
 The complete set of files for this example are in the examples/unit/parameters directory here (TODO LINK).
 
@@ -25,7 +25,7 @@ Inline:
         })
 ```
 
-From configuration files:
+From configuration files (this example uses a path relative to the test case file):
 ```python
     config_path = Path(__file__).parent / "invalid_params_regex.cf.json"
 
