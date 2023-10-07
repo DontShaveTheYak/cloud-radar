@@ -8,9 +8,7 @@ import base64 as b64
 import ipaddress
 import json
 import re
-
-# Flake8 and isort disagree on this order
-from typing import TYPE_CHECKING, Any, Callable, Dict, List  # noqa I101
+from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 import requests
 
