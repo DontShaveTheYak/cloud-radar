@@ -762,11 +762,6 @@ def ref(template: "Template", var_name: str) -> Any:
                 )
 
             # If we get this far, regular parameter value to lookup & return
-            # TODO: doing it here feels like it will mean we need the logic in
-            # multiple places, and that we wouldn't be able to validate the values
-            # in the resolved value against the AWS types (would we want to do that though,
-            # sounds like a step too far in reality)
-
             return template.template["Parameters"][var_name]["Value"]
 
     if var_name in template.template["Resources"]:
