@@ -462,33 +462,11 @@ class Template:
             raise ValueError("You passed a Parameter that was not in the Template.")
 
         for p_name, p_value in t_params.items():
-            # TODO: Need to add something in here for if the parameter type
-            # is one of the SSM ones, so that it can call
-            # self.dynamic_references["ssm"][key] to get the value
-            #
-            # TODO: also need to validate that the key actually exists to
-            # provide a helpful error message instance of just a KeyError
-
-            #
-            #
-
-            # if key not in self.dynamic_references[service]:
-            #   raise KeyError(
-            #       (
-            #           f"Key {key} not included in dynamic references "
-            #           f"configuration for service {service}"
-            #       )
-            #   )
-
             if p_name in parameters:
                 validate_parameter_constraints(
                     p_name, t_params[p_name], parameters[p_name]
                 )
 
-                # So roughly, this line needs to look at the type,
-                # OR DOES IT
-                # Should processing of t_params consider dynamic reference resolution?
-                # Then that would handle the defaults too
                 t_params[p_name]["Value"] = parameters[p_name]
                 continue
 
@@ -647,7 +625,6 @@ def validate_aws_parameter_constraints(
             "AWS::Route53::HostedZone::Id": "^[A-Z0-9]{,32}$",
             # All the docs say for this type is up to 255 ascii characters
             "AWS::EC2::KeyPair::KeyName": "^[ -~]{1,255}$",
-            # TODO: Validate this elsewhere too, common regex?
             "AWS::SSM::Parameter::Name": ssm_parameter_value_regex,
         }
         param_regex = parameter_type_regexes.get(parameter_type)
