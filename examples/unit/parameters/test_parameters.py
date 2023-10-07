@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import pytest
@@ -71,7 +70,7 @@ def test_invalid_params_regex(template: Template):
     with pytest.raises(
         ValueError,
         match=(
-            "Value Abhd%k\* does not match the AllowedPattern for parameter Password"
+            r"Value Abhd%k\* does not match the AllowedPattern for parameter Password"
         ),
     ):
         template.create_stack(parameters_file=config_path)
