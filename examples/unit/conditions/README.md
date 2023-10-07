@@ -6,7 +6,7 @@ This example shows two main scenarios:
 * Conditional resources were created or not.
 
 
-It uses [this AWS Labs sample template](https://github.com/awslabs/aws-cloudformation-templates/blob/1de97eda75e3b876b8fcb0166d2d4c0691bdcdf5/aws/services/SQS/SQSStandardQueue.json), that includes a condition for if an SQS Queue should have a Dead Letter Queue configured for it or not. This uses a pretty simple condition that simply checks if a parameter value was set to `true`, but this can be as compicated as your template requires.
+It uses [this AWS Labs sample template](https://github.com/awslabs/aws-cloudformation-templates/blob/1de97eda75e3b876b8fcb0166d2d4c0691bdcdf5/aws/services/SQS/SQSStandardQueue.json), that includes a condition for if an SQS Queue should have a Dead Letter Queue configured for it or not. This uses a pretty simple condition that simply checks if a parameter value was set to `true`, but this can be as complicated as your template requires.
 
 ```json
     "Conditions": {
@@ -22,7 +22,7 @@ It uses [this AWS Labs sample template](https://github.com/awslabs/aws-cloudform
 ```
 
 
-The rendered stack includes a number of method for determining if your conditions worked as epected.
+The rendered stack includes a number of method for determining if your conditions worked as expected.
 
 These methods can be used to assert if named resources exist or not:
 ```python
@@ -68,7 +68,7 @@ A test case is able to check that when the DLQ was not created, that this redriv
     assert main_queue.get_property_value("RedrivePolicy") == ''
 ```
 
-Or inversly that it was set and referenced the correct target queue:
+Or inversely that it was set and referenced the correct target queue:
 ```python
     # When the second queue is being created, the SQSQueue should have a
     # redrive policy set referring to it
