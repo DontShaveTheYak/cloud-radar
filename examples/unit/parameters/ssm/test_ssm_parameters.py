@@ -47,10 +47,15 @@ def test_default_values(template: Template):
 
     assert database_name_value == "my-great-database"
 
+    table_input = table_resource.get_property_value("TableInput")
+
+    # Assert that the SSM parameter used as part of a dynamic reference
+    # is resolved
+    table_input_name = table_input["Name"]
+    assert table_input_name == "my-great-database_my_table"
+
     # Assert that the SSM parameter used in a Sub is resolved based on the
     # lookup
-    # TODO: Nested property value lookup would help here
-    table_input = table_resource.get_property_value("TableInput")
     location = table_input["StorageDescriptor"]["Location"]
     assert location == "s3://my-great-s3-bucket/test"
 
@@ -63,9 +68,40 @@ def test_invalid_ssm_pattern(template: Template):
         template.create_stack(params={"MyBucket": "bad-ssm-path-$*£&@*"})
 
 
-def test_ssm_key_without_reference():
-    print("TODO")
+def test_ssm_key_without_reference(template: Template):
+    """
+    This test case covers where an SSM parameter key is supplied but isn't referenced
+    in the template definition
+    """
+    with pytest.raises(
+        KeyError,
+        match=(
+            "Key /an/ssm/key/that/does/not/exist not included "
+            "in dynamic references configuration for service ssm"
+        ),
+    ):
+        template.create_stack(params={"MyBucket": "/an/ssm/key/that/does/not/exist"})
 
 
 def test_unsupported_ssm_parameter_type():
-    print("TODO")
+    """
+    This test case covers if an SSM parameter is defined in the template which uses an unknown
+    value type (really this should be caught by a linter first)
+    """
+
+    template = Template(
+        template={
+            "Parameters": {
+                "MyBucket": {
+                    "Type": "AWS::SSM::Parameter::Value<NotARealType>",
+                    "Description": "The bucket name where all the data will be put into.",
+                }
+            }
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Type NotARealType is not a supported SSM value type for  SSM parameter MyBucket",
+    ):
+        template.create_stack(params={"MyBucket": "/an/ssm/key/that/does/not/exist"})

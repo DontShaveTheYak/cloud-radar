@@ -18,7 +18,9 @@ Resources:
     Properties:
       DatabaseName: !Ref MyDatabase  # Reference the MyDatabase SSM parameter
       TableInput:
-        Name: my_table
+        # This name includes a Dynamic Reference to show the different ways that an
+        # SSM value could be imported
+        Name: "{{resolve:ssm:/my_parameters/database/name}}_my_table"
         StorageDescriptor:
           Columns:
             - Name: column_1

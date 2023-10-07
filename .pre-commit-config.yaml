@@ -3,7 +3,7 @@ repos:
     rev: v2.3.0
     hooks:
       - id: check-yaml
-        exclude: ^tests/templates
+        exclude: ^(tests/templates|examples/unit)
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: local

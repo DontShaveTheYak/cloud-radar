@@ -12,7 +12,7 @@ This supports all the types of CloudFormation parameters:
 
 You can use this feature to validate that any parameter configuration files are valid, and also use assertions to confirm that invalid values would be rejected. Parameters can either be supplied as a `dict` of Key/Value pairs, or loaded from configuration files. At this point the [CodePipeline artifact](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/deploy/index.html#supported-json-syntax) and [CloudFormation CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/create-stack.html) formats can be loaded in from files.
 
-The complete set of files for this example are in the examples/unit/parameters directory here (TODO LINK).
+The complete set of files for these examples are in this directory.
 
 # Supplying Parameters
 
@@ -32,8 +32,10 @@ From configuration files (this example uses a path relative to the test case fil
     template.create_stack(parameters_file=config_path)
 ```
 
+## Configuration File Formats
 Examples of the two configuration formats are shown below.
 
+CodePipeline:
 ```json
 {
     "Parameters": {
@@ -42,6 +44,7 @@ Examples of the two configuration formats are shown below.
 }
 ```
 
+CloudFormation CLI:
 ```json
 [
     {
@@ -87,11 +90,42 @@ def test_invalid_params(template: Template):
 
 ## SSM Parameter Types
 
-As well as validating that the SSM parameter key supplied matches the pattern for what an SSM parameter key should look like, Cloud Radar will substitute in values through the same configuration approach used for Dynamic References.
+As well as validating that the SSM parameter key supplied matches the pattern for what an SSM parameter key should look like, Cloud Radar will substitute in values. The substitution of SSM parameters is also supported through [Dynamic References](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html).
 
-This requires that when you define your `Template` in your test case that you include values that should be returned when SSM keys are referenced.
+The example template in the ssm directory includes this as one of the parameters for the template:
+```yaml
+Parameters:
+  MyBucket:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: The bucket name where all the data will be put into.
+    Default: /my_parameters/bucket/name
+```
+
+Any place that this is included in a `!Ref` or a `!Sub` will have a value substituted in correctly, just like for other parameter types. This requires that when you define your `Template` in your test case that you include values that should be returned when SSM keys are referenced.
 
 ```python
+    template_path = Path(__file__).parent / "SSM_Parameter_example.yaml"
+
+    return Template.from_yaml(
+        template_path.resolve(),
+        dynamic_references={
+            "ssm": {
+                "/my_parameters/database/name": "my-great-database",
+                "/my_parameters/bucket/name": "my-great-s3-bucket",
+            }
+        },
+    )
+```
 
 
+If a parameter key is used which was not defined with the template, then a Key Error will be raised. You can test that unexpected parameters result in an error like this:
+
+```python
+    with pytest.raises(
+        KeyError,
+        match="Key /an/ssm/key/that/does/not/exist not included in dynamic references configuration for service ssm"
+    ):
+        template.create_stack(params={
+            "MyBucket": "/an/ssm/key/that/does/not/exist"
+        })
 ```
