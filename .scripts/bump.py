@@ -4,7 +4,6 @@ import sys
 from typing import Any, Dict
 
 import requests
-
 import semver
 
 repo: str = "cloud-radar"

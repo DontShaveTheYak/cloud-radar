@@ -8,7 +8,7 @@ import base64 as b64
 import ipaddress
 import json
 import re
-from typing import Any, Callable, Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 import requests
 
