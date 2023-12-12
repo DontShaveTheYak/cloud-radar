@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, Union
 
 from taskcat.testing import CFNTest
 
-
 Template = Union[str, Path]
 Parameters = Optional[Dict[str, Any]]
 Regions = Optional[List[str]]

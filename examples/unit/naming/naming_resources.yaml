@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Basic template containing test resources'
+Parameters:
+  pName:
+    Type: String
+    Description: 'A string included in resource names'
+Resources:
+  rS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub "${pName}-${AWS::Region}-bucket"
+    DeletionPolicy: Retain
+
+  rSampleBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref rS3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref rS3Bucket
+                - /*
+            Principal: '*'
+            Condition:
+              StringLike:
+                'aws:Referer':
+                  - 'http://www.example.com/*'
+                  - 'http://example.net/*'
+
+  rFileSystem:
+    Type: "AWS::EFS::FileSystem"
+    Properties:
+      PerformanceMode: "generalPurpose"
+      FileSystemTags:
+        - Key: "Name"
+          Value: !Sub "my-${pName}-${AWS::Region}-vol"
+Outputs:
+  oBucket:
+    Description: S3 Bucket Name
+    Value: !Ref rS3Bucket
