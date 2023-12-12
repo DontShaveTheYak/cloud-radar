@@ -33,6 +33,7 @@ repos:
         entry: poetry run flake8
         language: system
         types: [python]
+        exclude: ^(tests|examples)/
 
       - id: pytest
         name: pytest
