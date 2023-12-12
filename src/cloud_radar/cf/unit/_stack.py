@@ -126,9 +126,9 @@ class Stack(UserDict):
 
         resources = self.data["Resources"]
 
-        resouce_data = resources[resource_name]
+        resource_data = resources[resource_name]
 
-        resource = Resource(resource_name, resouce_data)
+        resource = Resource(resource_name, resource_data)
 
         return resource
 
