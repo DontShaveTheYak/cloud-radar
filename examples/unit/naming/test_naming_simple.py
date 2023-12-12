@@ -29,6 +29,10 @@ def test_static_naming(stack: Stack):
     # but this time the value is in a tag.
     # This resource type uses a non-standard Tag property
     efs_vol = stack.get_resource("rFileSystem")
+
+    # Internally you only need to call one of these, as "assert_has_tag"
+    # checks that the tag has a non-None value
+    efs_vol.assert_has_tag("Name", "FileSystemTags")
     efs_vol.assert_tag_has_value("Name", "my-test-xx-west-3-vol", "FileSystemTags")
 
 
