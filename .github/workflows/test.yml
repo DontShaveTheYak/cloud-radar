@@ -15,10 +15,10 @@ jobs:
     name: Pre-commit
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Setup Latest Python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.8.0
         with:
           python-version: 3.9
           architecture: x64
@@ -52,10 +52,10 @@ jobs:
     name: Python ${{ matrix.python-version }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.8.0
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
