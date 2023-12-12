@@ -128,28 +128,6 @@ urllib3 = ">=1.25.4,<1.27"
 crt = ["awscrt (==0.14.0)"]
 
 [[package]]
-name = "cached-property"
-version = "1.5.2"
-description = "A decorator for caching properties in classes."
-optional = false
-python-versions = "*"
-files = [
-    {file = "cached-property-1.5.2.tar.gz", hash = "sha256:9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130"},
-    {file = "cached_property-1.5.2-py2.py3-none-any.whl", hash = "sha256:df4f613cf7ad9a588cc381aaf4a512d26265ecebd5eb9e1ba12f1319eb85a6a0"},
-]
-
-[[package]]
-name = "cerberus"
-version = "1.3.5"
-description = "Lightweight, extensible schema and data validation tool for Pythondictionaries."
-optional = false
-python-versions = "*"
-files = [
-    {file = "Cerberus-1.3.5-py3-none-any.whl", hash = "sha256:7649a5815024d18eb7c6aa5e7a95355c649a53aacfc9b050e9d0bf6bfa2af372"},
-    {file = "Cerberus-1.3.5.tar.gz", hash = "sha256:81011e10266ef71b6ec6d50e60171258a5b134d69f8fb387d16e4936d0d47642"},
-]
-
-[[package]]
 name = "certifi"
 version = "2022.6.15"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -323,17 +301,6 @@ apispec = ["apispec"]
 fast-validation = ["fastjsonschema"]
 
 [[package]]
-name = "distlib"
-version = "0.3.7"
-description = "Distribution utilities"
-optional = false
-python-versions = "*"
-files = [
-    {file = "distlib-0.3.7-py2.py3-none-any.whl", hash = "sha256:2e24928bc811348f0feb63014e97aaae3037f2cf48712d51ae61df7fd6075057"},
-    {file = "distlib-0.3.7.tar.gz", hash = "sha256:9dafe54b34a028eafd95039d5e5d4851a13734540f1331060d31c9916e7147a8"},
-]
-
-[[package]]
 name = "docker"
 version = "4.2.2"
 description = "A Python library for the Docker Engine API."
@@ -353,16 +320,6 @@ websocket-client = ">=0.32.0"
 [package.extras]
 ssh = ["paramiko (>=2.4.2)"]
 tls = ["cryptography (>=1.3.4)", "idna (>=2.0.0)", "pyOpenSSL (>=17.5.0)"]
-
-[[package]]
-name = "docopt"
-version = "0.6.2"
-description = "Pythonic argument parser, that will make you smile"
-optional = false
-python-versions = "*"
-files = [
-    {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
-]
 
 [[package]]
 name = "dulwich"
@@ -513,23 +470,14 @@ files = [
 
 [[package]]
 name = "isort"
-version = "5.13.0"
+version = "5.13.1"
 description = "A Python utility / library to sort Python imports."
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "isort-5.13.0-py3-none-any.whl", hash = "sha256:15e0e937819b350bc256a7ae13bb25f4fe4f8871a0bc335b20c3627dba33f458"},
-    {file = "isort-5.13.0.tar.gz", hash = "sha256:d67f78c6a1715f224cca46b29d740037bdb6eea15323a133e897cda15876147b"},
+    {file = "isort-5.13.1-py3-none-any.whl", hash = "sha256:56a51732c25f94ca96f6721be206dd96a95f42950502eb26c1015d333bc6edb7"},
+    {file = "isort-5.13.1.tar.gz", hash = "sha256:aaed790b463e8703fb1eddb831dfa8e8616bacde2c083bd557ef73c8189b7263"},
 ]
-
-[package.dependencies]
-pip-api = "*"
-pipreqs = "*"
-requirementslib = "*"
-
-[package.extras]
-colors = ["colorama (>=0.4.6)"]
-plugins = ["setuptools"]
 
 [[package]]
 name = "jinja2"
@@ -850,20 +798,6 @@ files = [
 ]
 
 [[package]]
-name = "pep517"
-version = "0.13.1"
-description = "Wrappers to build Python packages using PEP 517 hooks"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "pep517-0.13.1-py3-none-any.whl", hash = "sha256:31b206f67165b3536dd577c5c3f1518e8fbaf38cbc57efff8369a392feff1721"},
-    {file = "pep517-0.13.1.tar.gz", hash = "sha256:1b2fa2ffd3938bb4beffe5d6146cbcb2bda996a5a4da9f31abffd8b24e07b317"},
-]
-
-[package.dependencies]
-tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
-
-[[package]]
 name = "pip"
 version = "22.2.2"
 description = "The PyPA recommended tool for installing Python packages."
@@ -873,35 +807,6 @@ files = [
     {file = "pip-22.2.2-py3-none-any.whl", hash = "sha256:b61a374b5bc40a6e982426aede40c9b5a08ff20e640f5b56977f4f91fed1e39a"},
     {file = "pip-22.2.2.tar.gz", hash = "sha256:3fd1929db052f056d7a998439176d3333fa1b3f6c1ad881de1885c0717608a4b"},
 ]
-
-[[package]]
-name = "pip-api"
-version = "0.0.30"
-description = "An unofficial, importable pip API"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "pip-api-0.0.30.tar.gz", hash = "sha256:a05df2c7aa9b7157374bcf4273544201a0c7bae60a9c65bcf84f3959ef3896f3"},
-    {file = "pip_api-0.0.30-py3-none-any.whl", hash = "sha256:2a0314bd31522eb9ffe8a99668b0d07fee34ebc537931e7b6483001dbedcbdc9"},
-]
-
-[package.dependencies]
-pip = "*"
-
-[[package]]
-name = "pipreqs"
-version = "0.4.13"
-description = "Pip requirements.txt generator based on imports in project"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "pipreqs-0.4.13-py2.py3-none-any.whl", hash = "sha256:e522b9ed54aa3e8b7978ff251ab7a9af2f75d2cd8de4c102e881b666a79a308e"},
-    {file = "pipreqs-0.4.13.tar.gz", hash = "sha256:a17f167880b6921be37533ce4c81ddc6e22b465c107aad557db43b1add56a99b"},
-]
-
-[package.dependencies]
-docopt = "*"
-yarg = "*"
 
 [[package]]
 name = "platformdirs"
@@ -917,25 +822,6 @@ files = [
 [package.extras]
 docs = ["furo (>=2021.7.5b38)", "proselint (>=0.10.2)", "sphinx (>=4)", "sphinx-autodoc-typehints (>=1.12)"]
 test = ["appdirs (==1.4.4)", "pytest (>=6)", "pytest-cov (>=2.7)", "pytest-mock (>=3.6)"]
-
-[[package]]
-name = "plette"
-version = "0.4.4"
-description = "Structured Pipfile and Pipfile.lock models."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "plette-0.4.4-py2.py3-none-any.whl", hash = "sha256:42d68ce8c6b966874b68758d87d7f20fcff2eff0d861903eea1062126be4d98f"},
-    {file = "plette-0.4.4.tar.gz", hash = "sha256:06b8c09eb90293ad0b8101cb5c95c4ea53e9b2b582901845d0904ff02d237454"},
-]
-
-[package.dependencies]
-cerberus = {version = "*", optional = true, markers = "extra == \"validation\""}
-tomlkit = "*"
-
-[package.extras]
-tests = ["pytest", "pytest-cov", "pytest-xdist"]
-validation = ["cerberus"]
 
 [[package]]
 name = "pluggy"
@@ -1204,35 +1090,6 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
-name = "requirementslib"
-version = "2.2.4"
-description = "A tool for converting between pip-style and pipfile requirements."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "requirementslib-2.2.4-py2.py3-none-any.whl", hash = "sha256:1c9a7692d07fe05f9400acae5059af7c37589eea8db4374a50439a79074d0f7a"},
-    {file = "requirementslib-2.2.4.tar.gz", hash = "sha256:4629283430e8c9a111b76e137ffee2913c941fc18bb296ce75cd03bc4f24fc51"},
-]
-
-[package.dependencies]
-attrs = ">=19.2"
-cached-property = "*"
-distlib = ">=0.2.8"
-pep517 = ">=0.5.0"
-pip = ">=22.2"
-platformdirs = "*"
-plette = {version = "*", extras = ["validation"]}
-requests = "*"
-setuptools = ">=40.8"
-tomlkit = ">=0.5.3"
-vistir = "0.8.0"
-
-[package.extras]
-dev = ["nox", "parver", "towncrier", "twine"]
-docs = ["sphinx", "sphinx-rtd-theme"]
-tests = ["coverage", "hypothesis", "pytest", "pytest-cov", "pytest-timeout", "pytest-xdist", "readme-renderer[md]"]
-
-[[package]]
 name = "s3transfer"
 version = "0.6.0"
 description = "An Amazon S3 Transfer Manager"
@@ -1347,17 +1204,6 @@ files = [
 ]
 
 [[package]]
-name = "tomlkit"
-version = "0.12.3"
-description = "Style preserving TOML library"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "tomlkit-0.12.3-py3-none-any.whl", hash = "sha256:b0a645a9156dc7cb5d3a1f0d4bab66db287fcb8e0430bdd4664a095ea16414ba"},
-    {file = "tomlkit-0.12.3.tar.gz", hash = "sha256:75baf5012d06501f07bee5bf8e801b9f343e7aac5a92581f20f80ce632e6b5a4"},
-]
-
-[[package]]
 name = "types-PyYAML"
 version = "6.0.12"
 description = "Typing stubs for PyYAML"
@@ -1421,26 +1267,6 @@ secure = ["certifi", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "ipaddress", "p
 socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
-name = "vistir"
-version = "0.8.0"
-description = "Miscellaneous utilities for dealing with filesystems, paths, projects, subprocesses, and more."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "vistir-0.8.0-py2.py3-none-any.whl", hash = "sha256:7b8d2301c860707a7a7f02c457eef685b9711470a6df157b692baf529606622f"},
-    {file = "vistir-0.8.0.tar.gz", hash = "sha256:dde88ef0d45dc1ad423fff2f0ad0e29e230de1b02457bdff5053dacd60ffcf97"},
-]
-
-[package.dependencies]
-colorama = ">=0.3.4,<0.4.2 || >0.4.2"
-
-[package.extras]
-dev = ["black", "coverage", "flake8", "flake8-bugbear", "invoke", "isort", "parver", "pre-commit", "rope", "sphinx", "sphinx-rtd-theme"]
-requests = ["requests"]
-tests = ["hypothesis", "hypothesis-fspaths", "pytest (==4.6.10)", "pytest-rerunfailures (<9.0)", "pytest-timeout", "pytest-xdist", "readme-renderer[md]", "twine"]
-typing = ["mypy", "mypy-extensions", "mypytools", "typed-ast"]
-
-[[package]]
 name = "websocket-client"
 version = "1.3.3"
 description = "WebSocket client for Python with low level API options"
@@ -1455,20 +1281,6 @@ files = [
 docs = ["Sphinx (>=3.4)", "sphinx-rtd-theme (>=0.5)"]
 optional = ["python-socks", "wsaccel"]
 test = ["websockets"]
-
-[[package]]
-name = "yarg"
-version = "0.1.9"
-description = "A semi hard Cornish cheese, also queries PyPI (PyPI client)"
-optional = false
-python-versions = "*"
-files = [
-    {file = "yarg-0.1.9-py2.py3-none-any.whl", hash = "sha256:4f9cebdc00fac946c9bf2783d634e538a71c7d280a4d806d45fd4dc0ef441492"},
-    {file = "yarg-0.1.9.tar.gz", hash = "sha256:55695bf4d1e3e7f756496c36a69ba32c40d18f821e38f61d028f6049e5e15911"},
-]
-
-[package.dependencies]
-requests = "*"
 
 [[package]]
 name = "yattag"
