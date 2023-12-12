@@ -9,6 +9,7 @@ import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
 from . import functions
+from ._hooks import Hooks
 from ._stack import Stack
 
 IntrinsicFunc = Callable[["Template", Any], Any]
@@ -78,6 +79,8 @@ class Template:
         self.transforms: Optional[Union[str, List[str]]] = self.template.get(
             "Transform", None
         )
+
+        self.hooks = Hooks()
 
     @classmethod
     def from_yaml(
@@ -316,6 +319,9 @@ class Template:
         self.render(params, parameters_file=parameters_file)
 
         stack = Stack(self.template)
+
+        # Evaluate any hooks prior to returning this stack
+        self.hooks.evaluate_hooks(stack, self)
 
         return stack
 
