@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pyexpat
 import pytest
 
 from cloud_radar.cf.unit import Template
