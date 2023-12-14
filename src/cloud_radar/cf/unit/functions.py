@@ -15,7 +15,15 @@ import requests
 if TYPE_CHECKING:
     from ._template import Template
 
+# Dispatch represents a dictionary where the keys are Cloudformation
+# function names in there long form and the values are the functions
+# in python that solve them.
 Dispatch = Dict[str, Callable[..., Any]]
+
+# Mapping represents the Cloudformation Mappings section of a template.
+# The keys are the names of the maps and the values are the maps themselves.
+# The maps are a nested dictionary.
+Mapping = Dict[str, Dict[str, Dict[str, Any]]]
 
 REGION_DATA = None
 
@@ -281,6 +289,39 @@ def condition(template: "Template", name: Any) -> bool:
     return condition_value
 
 
+def _find_in_map(maps: Mapping, map_name: str, top_key: str, second_key: str) -> Any:
+    """Solves AWS FindInMap intrinsic function.
+
+    Args:
+        maps (Mapping): The Cloudformation Mappings section of the template.
+        map_name (str): The name of the Map to search.
+        top_key (str): The top level key to search.
+        second_key (str): The second level key to search.
+
+    Raises:
+        KeyError: If map_name is not found in the Mapping section.
+        KeyError: If top_key is not found in the Map.
+        KeyError: If second_key is not found in the Map.
+
+    Returns:
+        Any: The requested value from the Map.
+    """
+    if map_name not in maps:
+        raise KeyError(f"Unable to find {map_name} in Mappings section of template.")
+
+    map = maps[map_name]
+
+    if top_key not in map:
+        raise KeyError(f"Unable to find key {top_key} in map {map_name}.")
+
+    first_level = map[top_key]
+
+    if second_key not in first_level:
+        raise KeyError(f"Unable to find key {second_key} in map {map_name}.")
+
+    return first_level[second_key]
+
+
 def find_in_map(template: "Template", values: Any) -> Any:
     """Solves AWS FindInMap intrinsic function.
 
@@ -319,20 +360,57 @@ def find_in_map(template: "Template", values: Any) -> Any:
 
     maps = template.template["Mappings"]
 
-    if map_name not in maps:
-        raise KeyError(f"Unable to find {map_name} in Mappings section of template.")
+    return _find_in_map(maps, map_name, top_key, second_key)
 
-    map = maps[map_name]
 
-    if top_key not in map:
-        raise KeyError(f"Unable to find key {top_key} in map {map_name}.")
+def enhanced_find_in_map(template: "Template", values: Any) -> Any:
+    """Solves AWS FindInMap intrinsic function. This version allows for a default value.
 
-    first_level = map[top_key]
+    Args:
+        template (Template): The template being tested.
+        values (Any): The values passed to the function.
 
-    if second_key not in first_level:
-        raise KeyError(f"Unable to find key {second_key} in map {map_name}.")
+    Raises:
+        TypeError: If values is not a list.
+        ValueError: If length of values is not 3.
+        KeyError: If the Map or specified keys are missing.
 
-    return first_level[second_key]
+    Returns:
+        Any: The requested value from the Map.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::FindInMap - The values must be a List, not {type(values).__name__}."
+        )
+
+    if len(values) not in [3, 4]:
+        raise ValueError(
+            (
+                "Fn::FindInMap - The values must contain "
+                "a MapName, TopLevelKey and SecondLevelKey. "
+                "Optionally, a third value can be provided to "
+                "specify a default value."
+            )
+        )
+
+    map_name = values[0]
+    top_key = values[1]
+    second_key = values[2]
+
+    if "Mappings" not in template.template:
+        raise KeyError("Unable to find Mappings section in template.")
+
+    maps = template.template["Mappings"]
+
+    default_value: Dict[str, Any] = values.pop(3) if len(values) == 4 else {}
+
+    try:
+        return _find_in_map(maps, map_name, top_key, second_key)
+    except KeyError:
+        if "DefaultValue" in default_value:
+            return default_value["DefaultValue"]
+        raise
 
 
 def get_att(template: "Template", values: Any) -> str:
@@ -940,4 +1018,16 @@ ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
     },
     "Fn::Transform": {},  # Transform isn't fully implemented
     "Ref": {},  # String only.
+}
+
+# Extra functions that are allowed if the template is using a transform.
+TRANSFORMS: Dict[str, Dispatch] = {
+    "AWS::CodeDeployBlueGreen": {},
+    "AWS::Include": {},
+    "AWS::LanguageExtensions": {
+        "Fn::FindInMap": enhanced_find_in_map,
+    },
+    "AWS::SecretsManager-2020-07-23": {},
+    "AWS::Serverless-2016-10-31": {},
+    "AWS::ServiceCatalog": {},
 }

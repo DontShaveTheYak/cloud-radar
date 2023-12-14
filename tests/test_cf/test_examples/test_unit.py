@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pyexpat
 import pytest
 
 from cloud_radar.cf.unit import Template
@@ -8,6 +9,13 @@ from cloud_radar.cf.unit import Template
 @pytest.fixture
 def template():
     template_path = Path(__file__).parent / "../../templates/log_bucket/log_bucket.yaml"
+
+    return Template.from_yaml(template_path.resolve(), {})
+
+
+@pytest.fixture
+def map_template():
+    template_path = Path(__file__).parent / "../../templates/test_maps.yml"
 
     return Template.from_yaml(template_path.resolve(), {})
 
@@ -46,3 +54,15 @@ def test_log_retain(template: Template):
     always_true = stack.get_condition("AlwaysTrue")
 
     always_true.assert_value_is(True)
+
+
+def test_maps(map_template: Template):
+    stack = map_template.create_stack()
+
+    baz_bucket = stack.get_resource("BazBucket")
+
+    baz_bucket.assert_property_has_value("BucketName", "baz")
+
+    bazinga_bucket = stack.get_resource("BazingaBucket")
+
+    bazinga_bucket.assert_property_has_value("BucketName", "bazinga")

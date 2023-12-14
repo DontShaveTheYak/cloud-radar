@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 
 import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
@@ -75,6 +75,9 @@ class Template:
         self.Region = Template.Region
         self.imports = imports
         self.dynamic_references = dynamic_references
+        self.transforms: Optional[Union[str, List[str]]] = self.template.get(
+            "Transform", None
+        )
 
     @classmethod
     def from_yaml(
@@ -197,12 +200,54 @@ class Template:
             # If we get this far then we do not support this type of configuration file
             raise ValueError("Parameter file is not in a supported format")
 
+    def load_allowed_functions(self) -> functions.Dispatch:
+        """Loads the allowed functions for this template.
+
+        Raises:
+            ValueError: If the transform is not supported.
+            ValueError: If the Transform section is not a string or list.
+
+        Returns:
+            functions.Dispatch: A dictionary of allowed functions.
+        """
+        if self.transforms is None:
+            return functions.ALL_FUNCTIONS
+
+        if isinstance(self.transforms, str):
+            if self.transforms not in functions.TRANSFORMS:
+                raise ValueError(f"Transform {self.transforms} not supported")
+
+            # dict of transform functions
+            transform_functions = functions.TRANSFORMS[self.transforms]
+
+            # return the merger of ALL_FUNCTIONS and the transform functions
+            return {**functions.ALL_FUNCTIONS, **transform_functions}
+
+        if isinstance(self.transforms, list):
+            # dict of transform functions
+            transform_functions = {}
+            for transform in self.transforms:
+                if transform not in functions.TRANSFORMS:
+                    raise ValueError(f"Transform {transform} not supported")
+                transform_functions = {
+                    **transform_functions,
+                    **functions.TRANSFORMS[transform],
+                }
+
+            # return the merger of ALL_FUNCTIONS and the transform functions
+            return {**functions.ALL_FUNCTIONS, **transform_functions}
+
+        raise ValueError(f"Transform {self.transforms} not supported")
+
     def render_all_sections(self, template: Dict[str, Any]) -> Dict[str, Any]:
         """Solves all conditionals, references and pseudo variables for all sections"""
+
+        allowed_functions = self.load_allowed_functions()
+
         if "Conditions" in template:
             template["Conditions"] = self.resolve_values(
                 template["Conditions"],
-                functions.ALL_FUNCTIONS,
+                allowed_functions,
             )
 
         template_sections = ["Resources", "Outputs"]
@@ -228,7 +273,7 @@ class Template:
 
                 template[section][r_name] = self.resolve_values(
                     r_value,
-                    functions.ALL_FUNCTIONS,
+                    allowed_functions,
                 )
 
         return template

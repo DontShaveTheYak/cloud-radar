@@ -278,6 +278,33 @@ def test_find_in_map():
     assert result == expected
 
 
+def test_transform_find_in_map():
+    template = {}
+
+    add_metadata(template, Template.Region)
+
+    template = Template(template)
+
+    map_name = "TestMap"
+    first_key = "FirstKey"
+    second_key = "SecondKey"
+    expected = "ExpectedValue"
+
+    values = [map_name, first_key, second_key, {"DefaultValue": "Default"}]
+
+    template.template["Mappings"] = {map_name: {first_key: {second_key: expected}}}
+
+    result = functions.enhanced_find_in_map(template, values)
+
+    assert result == expected
+
+    values = [map_name, first_key, "FakeKey", {"DefaultValue": "Default"}]
+
+    result = functions.enhanced_find_in_map(template, values)
+
+    assert result == "Default"
+
+
 def test_get_att():
     template = {"Resources": {}}
 
