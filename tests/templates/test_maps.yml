@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Creates an S3 bucket to store logs."
+
+Transform: AWS::LanguageExtensions
+
+Mappings:
+  Test:
+    Foo:
+      bar: baz
+
+Resources:
+  BazBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !FindInMap [Test, Foo, bar]
+
+  BazingaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !FindInMap [Test, Foo, baz, DefaultValue: bazinga]

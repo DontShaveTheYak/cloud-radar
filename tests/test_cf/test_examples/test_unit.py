@@ -12,6 +12,13 @@ def template():
     return Template.from_yaml(template_path.resolve(), {})
 
 
+@pytest.fixture
+def map_template():
+    template_path = Path(__file__).parent / "../../templates/test_maps.yml"
+
+    return Template.from_yaml(template_path.resolve(), {})
+
+
 def test_log_defaults(template: Template):
     stack = template.create_stack({"BucketPrefix": "testing"})
 
@@ -46,3 +53,15 @@ def test_log_retain(template: Template):
     always_true = stack.get_condition("AlwaysTrue")
 
     always_true.assert_value_is(True)
+
+
+def test_maps(map_template: Template):
+    stack = map_template.create_stack()
+
+    baz_bucket = stack.get_resource("BazBucket")
+
+    baz_bucket.assert_property_has_value("BucketName", "baz")
+
+    bazinga_bucket = stack.get_resource("BazingaBucket")
+
+    bazinga_bucket.assert_property_has_value("BucketName", "bazinga")
