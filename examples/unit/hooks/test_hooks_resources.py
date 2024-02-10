@@ -2,22 +2,22 @@ from pathlib import Path
 
 import pytest
 
-from cloud_radar.cf.unit import Resource, Stack, Template
+from cloud_radar.cf.unit import ResourceHookContext, Template
+
+# TODO: Docs - Hook names should be descriptive and unique
 
 
-def my_s3_naming_hook(
-    resource_data: Resource, stack_info: Stack, template_info: Template
-) -> None:
-    name: str = resource_data.get_property_value("BucketName")
+def my_s3_naming_hook(context: ResourceHookContext) -> None:
+    name: str = context.resource_definition.get_property_value("BucketName")
 
     assert (
-        template_info.Region in name
-    ), "All buckets are expected to include the region in their name"
+        context.template.Region in name
+    ), f"{context.logical_id} - All buckets are expected to include the region in their name"
 
 
-def my_s3_encryption_hook(resource_data, stack_info, template_info: Template) -> None:
+def my_s3_encryption_hook(context: ResourceHookContext) -> None:
     assert (
-        resource_data.get_property_value("BucketEncryption") is True
+        context.resource_definition.get_property_value("BucketEncryption") is True
     ), "All buckets are expected to have encryption enabled"
 
 
