@@ -790,7 +790,7 @@ def validate_string_parameter_constraints(
 
 def add_metadata(template: Dict, region: str) -> None:
     """This functions adds the current region to the template
-    as metadate because we can't treat Region like a normal pseduo
+    as metadata because we can't treat Region like a normal pseudo
     variables because we don't want to update the class var for every run.
 
     Args:
@@ -798,12 +798,16 @@ def add_metadata(template: Dict, region: str) -> None:
         region (str): The region that template will be tested with.
     """
 
-    metadata = {"Cloud-Radar": {"Region": region}}
-
     if "Metadata" not in template:
         template["Metadata"] = {}
 
-    template["Metadata"].update(metadata)
+    # Get the existing metadata (so we do not overwrite any
+    # hook suppressions), then set the region into it before
+    # updating the template
+    cloud_radar_metadata = template["Metadata"].get("Cloud-Radar", {})
+    cloud_radar_metadata["Region"] = region
+
+    template["Metadata"]["Cloud-Radar"] = cloud_radar_metadata
 
 
 # All the other Cloudformation intrinsic functions start with `Fn:` but for some reason

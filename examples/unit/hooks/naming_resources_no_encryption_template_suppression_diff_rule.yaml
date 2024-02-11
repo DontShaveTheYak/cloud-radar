@@ -1,5 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: 'Basic template containing test resources'
+Metadata:
+  Cloud-Radar:
+    ignore-hooks:
+      - a_different_check
 Parameters:
   pName:
     Type: String
@@ -11,11 +15,6 @@ Resources:
     UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub "${pName}-${AWS::Region}-bucket"
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-
 
   rSampleBucketPolicy:
     Type: AWS::S3::BucketPolicy
