@@ -4,7 +4,18 @@ import pytest
 
 from cloud_radar.cf.unit import ResourceHookContext, Template
 
-# TODO: Docs - Hook names should be descriptive and unique
+
+@pytest.fixture()
+def configure_hooks():
+    # Add in locally defined hooks
+    Template.Hooks.resources = {
+        "AWS::S3::Bucket": [my_s3_naming_hook, my_s3_encryption_hook]
+    }
+
+    yield
+
+    # Clear the hooks after
+    Template.Hooks.resources = {}
 
 
 # Example hook that verifies that the rendered bucket name (after
@@ -29,20 +40,15 @@ def my_s3_encryption_hook(context: ResourceHookContext) -> None:
 
 
 # Helper method to load a template file relative to this test file
-# and set the resource level hooks.
 def load_template(filename: str):
     template_path = Path(__file__).parent / filename
     template = Template.from_yaml(template_path)
-
-    # Add in locally defined hooks
-    template.hooks.resources = {
-        "AWS::S3::Bucket": [my_s3_naming_hook, my_s3_encryption_hook]
-    }
 
     return template
 
 
 # Test case showing that when all hooks pass, no errors are raised.
+@pytest.mark.usefixtures("configure_hooks")
 def test_basic_all_success():
     template = load_template("naming_resources.yaml")
 
@@ -55,6 +61,7 @@ def test_basic_all_success():
 
 # Test case showing that when a resource hook causes an error,
 # we see it at the point of creating the rendered stack
+@pytest.mark.usefixtures("configure_hooks")
 def test_basic_resource_failure():
     template = load_template("naming_resources_no_encryption.yaml")
 
@@ -68,6 +75,7 @@ def test_basic_resource_failure():
 # The contents of this test template are mostly the same as the one we used for
 # test_basic_resource_failure, but this time we have the appropriate Metadata
 # at the Template level to ignore the resource hook that was failing
+@pytest.mark.usefixtures("configure_hooks")
 def test_template_suppression_success():
     template = load_template("naming_resources_no_encryption_template_suppression.yaml")
 
@@ -77,6 +85,7 @@ def test_template_suppression_success():
 # This test is similar to test_template_suppression_success,
 # but shows that if the hook being ignored is different from the
 # failing one that we still see the failure.
+@pytest.mark.usefixtures("configure_hooks")
 def test_template_suppression_diff_hook():
     template = load_template(
         "naming_resources_no_encryption_template_suppression_diff_rule.yaml"
@@ -91,6 +100,7 @@ def test_template_suppression_diff_hook():
 # The contents of this test template are mostly the same as the one we used for
 # test_basic_resource_failure, but this time we have the appropriate Metadata
 # at the Resource level to ignore the resource hook that was failing
+@pytest.mark.usefixtures("configure_hooks")
 def test_resource_suppression_success():
     template = load_template(
         "naming_resources_no_encryption_resource_suppression_diff_rule.yaml"

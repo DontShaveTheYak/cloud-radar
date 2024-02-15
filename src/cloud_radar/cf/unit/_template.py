@@ -9,7 +9,7 @@ import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
 from . import functions
-from ._hooks import Hooks
+from ._hooks import HookProcessor
 from ._stack import Stack
 
 IntrinsicFunc = Callable[["Template", Any], Any]
@@ -21,6 +21,7 @@ class Template:
     """
 
     AccountId: str = "5" * 12
+    Hooks = HookProcessor()
     NotificationARNs: list = []
     NoValue: str = ""  # Not yet implemented
     Partition: str = "aws"  # Other regions not implemented
@@ -80,7 +81,9 @@ class Template:
             "Transform", None
         )
 
-        self.hooks = Hooks()
+        # All loaded, validate against any template level hooks
+        # that have been configured
+        self.Hooks.evaluate_template_hooks(self)
 
     @classmethod
     def from_yaml(
@@ -321,7 +324,7 @@ class Template:
         stack = Stack(self.template)
 
         # Evaluate any hooks prior to returning this stack
-        self.hooks.evaluate_hooks(stack, self)
+        self.Hooks.evaluate_resource_hooks(stack, self)
 
         return stack
 

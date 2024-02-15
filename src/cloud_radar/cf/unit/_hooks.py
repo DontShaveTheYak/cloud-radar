@@ -68,7 +68,7 @@ class TemplateHookCollection:
     local: List[Callable]
 
 
-class Hooks:
+class HookProcessor:
     """
     Class that handles holding and evaluating the collections of hooks that we run
     against Templates and Resources.
@@ -144,22 +144,10 @@ class Hooks:
         for single_hook in hooks:
             # Only process the hook if it has not been marked as to be
             # ignored
-            if not self._is_hook_suppressed(
-                single_hook.__name__, template.template.get("Metadata", {})
-            ):
+            if not self._is_hook_suppressed(single_hook.__name__, template, None):
                 print(f"Processing {hook_type} hook {single_hook.__name__}")
 
                 single_hook(template=template)
-
-    def _evaluate_all_template_hooks(self, template: "Template") -> None:
-        # Use cases:
-        # - Ensuring all templates have some common parameters, e.g. Environment,  Lifecycle
-        # - Ensuring logical id naming conventions of
-        #   Parameters starting with "p" etc are followed
-
-        # Evaluate the global hooks first, then the local ones
-        self._evaluate_template_hooks("plugin", self._template.plugin, template)
-        self._evaluate_template_hooks("local", self._template.local, template)
 
     def _evaluate_resource_hooks(
         self,
@@ -196,10 +184,16 @@ class Hooks:
 
                     single_hook(context=hook_context)
 
-    def _evaluate_all_resource_hooks(self, stack: Stack, template: "Template") -> None:
+    def evaluate_resource_hooks(self, stack: Stack, template: "Template") -> None:
         # Evaluate the global hooks first, then the local ones
         self._evaluate_resource_hooks("plugin", self._resources.plugin, stack, template)
         self._evaluate_resource_hooks("local", self._resources.local, stack, template)
 
-    def evaluate_hooks(self, stack: Stack, template: "Template") -> None:
-        self._evaluate_all_resource_hooks(stack, template)
+    def evaluate_template_hooks(self, template: "Template") -> None:
+        print(template)
+        # raise ValueError(type(template))
+        # raise ValueError(template.template)
+
+        # Evaluate the global hooks first, then the local ones
+        self._evaluate_template_hooks("plugin", self._template.plugin, template)
+        self._evaluate_template_hooks("local", self._template.local, template)
