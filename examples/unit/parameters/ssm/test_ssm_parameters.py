@@ -24,7 +24,8 @@ def template():
         dynamic_references={
             "ssm": {
                 "/my_parameters/database/name": "my-great-database",
-                "/my_parameters/bucket/name": "my-great-s3-bucket",
+                "/product/dev/eu-west-1/import/assets-bucket": "my-great-s3-bucket",
+                "/product/dev/eu-west-2/import/assets-bucket": "my-greatest-s3-bucket",
             }
         },
     )
@@ -105,3 +106,23 @@ def test_unsupported_ssm_parameter_type():
         match="Type NotARealType is not a supported SSM value type for  SSM parameter MyBucket",
     ):
         template.create_stack(params={"MyBucket": "/an/ssm/key/that/does/not/exist"})
+
+
+def test_supplied_value(template: Template):
+    # Test showing that when an SSM parameter key is supplied as a parameter,
+    # the correct substitution is performed.
+
+    stack = template.create_stack(
+        params={"MyBucket": "/product/dev/eu-west-2/import/assets-bucket"}
+    )
+
+    # No error at this point means that validation rules have
+    # passed, go on to check the resource properties to see the value
+    # has been substituted
+    table_resource = stack.get_resource("MyTable")
+
+    # Assert that the SSM parameter used in a Sub is resolved based on the
+    # lookup
+    table_input = table_resource.get_property_value("TableInput")
+    location = table_input["StorageDescriptor"]["Location"]
+    assert location == "s3://my-greatest-s3-bucket/test"
