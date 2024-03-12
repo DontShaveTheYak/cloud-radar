@@ -9,6 +9,7 @@ import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
 from . import functions
+from ._hooks import HookProcessor
 from ._stack import Stack
 
 IntrinsicFunc = Callable[["Template", Any], Any]
@@ -20,6 +21,7 @@ class Template:
     """
 
     AccountId: str = "5" * 12
+    Hooks = HookProcessor()
     NotificationARNs: list = []
     NoValue: str = ""  # Not yet implemented
     Partition: str = "aws"  # Other regions not implemented
@@ -78,6 +80,10 @@ class Template:
         self.transforms: Optional[Union[str, List[str]]] = self.template.get(
             "Transform", None
         )
+
+        # All loaded, validate against any template level hooks
+        # that have been configured
+        self.Hooks.evaluate_template_hooks(self)
 
     @classmethod
     def from_yaml(
@@ -316,6 +322,9 @@ class Template:
         self.render(params, parameters_file=parameters_file)
 
         stack = Stack(self.template)
+
+        # Evaluate any hooks prior to returning this stack
+        self.Hooks.evaluate_resource_hooks(stack, self)
 
         return stack
 
@@ -789,7 +798,7 @@ def validate_string_parameter_constraints(
 
 def add_metadata(template: Dict, region: str) -> None:
     """This functions adds the current region to the template
-    as metadate because we can't treat Region like a normal pseduo
+    as metadata because we can't treat Region like a normal pseudo
     variables because we don't want to update the class var for every run.
 
     Args:
@@ -797,12 +806,16 @@ def add_metadata(template: Dict, region: str) -> None:
         region (str): The region that template will be tested with.
     """
 
-    metadata = {"Cloud-Radar": {"Region": region}}
-
     if "Metadata" not in template:
         template["Metadata"] = {}
 
-    template["Metadata"].update(metadata)
+    # Get the existing metadata (so we do not overwrite any
+    # hook suppressions), then set the region into it before
+    # updating the template
+    cloud_radar_metadata = template["Metadata"].get("Cloud-Radar", {})
+    cloud_radar_metadata["Region"] = region
+
+    template["Metadata"]["Cloud-Radar"] = cloud_radar_metadata
 
 
 # All the other Cloudformation intrinsic functions start with `Fn:` but for some reason

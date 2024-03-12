@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Basic template containing test resources'
+Parameters:
+  Name:
+    Type: String
+    Description: 'A string included in resource names'
+Resources:
+  rS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${Name}-${AWS::Region}-bucket"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  rFileSystem:
+    Type: "AWS::EFS::FileSystem"
+    Properties:
+      PerformanceMode: "generalPurpose"
+      FileSystemTags:
+        - Key: "Name"
+          Value: !Sub "my-${Name}-${AWS::Region}-vol"
+Outputs:
+  oBucket:
+    Description: S3 Bucket Name
+    Value: !Ref rS3Bucket

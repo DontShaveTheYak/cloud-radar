@@ -7,13 +7,14 @@ Parameters:
 Resources:
   rS3Bucket:
     Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      Cloud-Radar:
+        ignore-hooks:
+          - a_different_check
     Properties:
       BucketName: !Sub "${pName}-${AWS::Region}-bucket"
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-    DeletionPolicy: Retain
 
   rSampleBucketPolicy:
     Type: AWS::S3::BucketPolicy
