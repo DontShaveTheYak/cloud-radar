@@ -87,6 +87,8 @@ You can Test:
 
 You can test all this locally without worrying about AWS Credentials.
 
+A number of these tests can be configured in a common way to apply to all templates through the use of the [hooks](./examples/unit/hooks/README.md) functionality.
+
 ### Functional Testing
 
 This project is a wrapper around Taskcat. Taskcat is a great tool for ensuring your Cloudformation Template can be deployed in multiple AWS Regions. Cloud-Radar enhances Taskcat by making it easier to write more complete functional tests.
@@ -170,7 +172,7 @@ The default values for pseudo parameters:
 | **StackId**      | ""              |
 | **StackName**    | ""              |
 | **URLSuffix**    | "amazonaws.com" |
-_Note: Bold variables are not fully impletmented yet see the [Roadmap](#roadmap)_
+_Note: Bold variables are not fully implemented yet see the [Roadmap](#roadmap)_
 
 At the point of creating the `Template` instance additional configuration is required to be provided if you are using certain approaches to resolving values.
 
