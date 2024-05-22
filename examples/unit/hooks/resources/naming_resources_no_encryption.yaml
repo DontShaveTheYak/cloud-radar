@@ -9,10 +9,6 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Properties:
       BucketName: !Sub "${pName}-${AWS::Region}-bucket"
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
     DeletionPolicy: Retain
 
   rSampleBucketPolicy:

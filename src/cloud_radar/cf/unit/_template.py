@@ -9,6 +9,7 @@ import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
 from . import functions
+from ._hooks import HookProcessor
 from ._stack import Stack
 
 IntrinsicFunc = Callable[["Template", Any], Any]
@@ -20,6 +21,7 @@ class Template:
     """
 
     AccountId: str = "5" * 12
+    Hooks = HookProcessor()
     NotificationARNs: list = []
     NoValue: str = ""  # Not yet implemented
     Partition: str = "aws"  # Other regions not implemented
@@ -78,6 +80,10 @@ class Template:
         self.transforms: Optional[Union[str, List[str]]] = self.template.get(
             "Transform", None
         )
+
+        # All loaded, validate against any template level hooks
+        # that have been configured
+        self.Hooks.evaluate_template_hooks(self)
 
     @classmethod
     def from_yaml(
@@ -316,6 +322,9 @@ class Template:
         self.render(params, parameters_file=parameters_file)
 
         stack = Stack(self.template)
+
+        # Evaluate any hooks prior to returning this stack
+        self.Hooks.evaluate_resource_hooks(stack, self)
 
         return stack
 
@@ -596,7 +605,12 @@ def validate_aws_parameter_constraints(
 
     # There are a few variants of SSM parameters, but they all have the
     # same regex pattern
-    ssm_parameter_value_regex = r"^(/{0,1}(?!/))[A-Za-z0-9/-_]+(.([a-zA-Z]+))?$"
+    #
+    # This is based on the documentation for the PutParameter API operation
+    # https://docs.aws.amazon.com/systems-manager/latest/APIReference/
+    # API_PutParameter.html#systemsmanager-PutParameter-request-Name
+    #
+    ssm_parameter_value_regex = r"^([/]{0,1}[a-zA-Z0-9_.-]*){1,15}$"
 
     if parameter_type.startswith("AWS::SSM::Parameter::Value<"):
         # SSM parameter, need to validate that the type in the angle brackets
@@ -640,7 +654,7 @@ def validate_aws_parameter_constraints(
             raise ValueError(
                 (
                     f"Value {parameter_value} does not match the expected pattern "
-                    f"for SSM parameter {parameter_name}"
+                    f"for SSM parameter {parameter_name}."
                 )
             )
 
@@ -784,7 +798,7 @@ def validate_string_parameter_constraints(
 
 def add_metadata(template: Dict, region: str) -> None:
     """This functions adds the current region to the template
-    as metadate because we can't treat Region like a normal pseduo
+    as metadata because we can't treat Region like a normal pseudo
     variables because we don't want to update the class var for every run.
 
     Args:
@@ -792,12 +806,16 @@ def add_metadata(template: Dict, region: str) -> None:
         region (str): The region that template will be tested with.
     """
 
-    metadata = {"Cloud-Radar": {"Region": region}}
-
     if "Metadata" not in template:
         template["Metadata"] = {}
 
-    template["Metadata"].update(metadata)
+    # Get the existing metadata (so we do not overwrite any
+    # hook suppressions), then set the region into it before
+    # updating the template
+    cloud_radar_metadata = template["Metadata"].get("Cloud-Radar", {})
+    cloud_radar_metadata["Region"] = region
+
+    template["Metadata"]["Cloud-Radar"] = cloud_radar_metadata
 
 
 # All the other Cloudformation intrinsic functions start with `Fn:` but for some reason
