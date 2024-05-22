@@ -605,7 +605,12 @@ def validate_aws_parameter_constraints(
 
     # There are a few variants of SSM parameters, but they all have the
     # same regex pattern
-    ssm_parameter_value_regex = r"^(/{0,1}(?!/))[A-Za-z0-9/-_]+(.([a-zA-Z]+))?$"
+    #
+    # This is based on the documentation for the PutParameter API operation
+    # https://docs.aws.amazon.com/systems-manager/latest/APIReference/
+    # API_PutParameter.html#systemsmanager-PutParameter-request-Name
+    #
+    ssm_parameter_value_regex = r"^([/]{0,1}[a-zA-Z0-9_.-]*){1,15}$"
 
     if parameter_type.startswith("AWS::SSM::Parameter::Value<"):
         # SSM parameter, need to validate that the type in the angle brackets
@@ -649,7 +654,7 @@ def validate_aws_parameter_constraints(
             raise ValueError(
                 (
                     f"Value {parameter_value} does not match the expected pattern "
-                    f"for SSM parameter {parameter_name}"
+                    f"for SSM parameter {parameter_name}."
                 )
             )
 

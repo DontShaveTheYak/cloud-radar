@@ -5,7 +5,7 @@ Parameters:
   MyBucket:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The bucket name where all the data will be put into.
-    Default: /my_parameters/bucket/name
+    Default: /product/dev/eu-west-1/import/assets-bucket
 
   MyDatabase:
     Type: 'AWS::SSM::Parameter::Value<String>'

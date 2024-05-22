@@ -1,18 +1,19 @@
 import sys
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Union
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
 
-from ._resource import Resource
-from ._stack import Stack
-
 # Work around some circular import issue until someone smarter
 # can work out the right way to restructure / refactor this
 # Solution from https://stackoverflow.com/a/39757388/230449
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Union
+
+from ._resource import Resource
+from ._stack import Stack
+
 if TYPE_CHECKING:
     from ._template import Template
 
