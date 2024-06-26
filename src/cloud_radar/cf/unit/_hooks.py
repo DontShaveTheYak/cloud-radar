@@ -1,9 +1,15 @@
+import sys
 from dataclasses import dataclass
+
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
 # Work around some circular import issue until someone smarter
 # can work out the right way to restructure / refactor this
 # Solution from https://stackoverflow.com/a/39757388/230449
-from typing import TYPE_CHECKING, Callable, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Union
 
 from ._resource import Resource
 from ._stack import Stack
@@ -96,7 +102,23 @@ class HookProcessor:
         self._template: TemplateHookCollection = TemplateHookCollection(
             plugin=[], local=[]
         )
-        # TODO: Add support for loading plugin hooks
+
+        # Property we will use to only attempt plugin loading once.
+        # We can't load plugins on creation of this class as
+        # we end up with a circular dependency
+        self._has_loaded_plugins = False
+        # Keep counts of the number of plugins we load that provide
+        # a type of hook, for informational purposes later on.
+        self._template_hook_plugins = 0
+        self._resource_hook_plugins = 0
+
+    @property
+    def template_hook_plugins(self):
+        return self._template_hook_plugins
+
+    @property
+    def resource_hook_plugins(self):
+        return self._resource_hook_plugins
 
     @property
     def template(self):
@@ -119,6 +141,50 @@ class HookProcessor:
         ignored_hooks = cloud_radar_metadata.get("ignore-hooks", {})
 
         return hook_name in ignored_hooks
+
+    def _load_hooks_from_single_plugin(self, loaded_plugin: Any):
+        plugin_instance = loaded_plugin()
+
+        # Get the Template hooks
+        if callable(getattr(plugin_instance, "get_template_hooks", None)):
+            # Plugin has a function for template hooks, call it
+            template_hooks = plugin_instance.get_template_hooks()
+
+            # Merge in these hooks with any existing values (from other plugins)
+            self._template.plugin += template_hooks
+
+            # Increment our plugin count
+            self._template_hook_plugins += 1
+
+        # Get the Resource hooks
+        if callable(getattr(plugin_instance, "get_resource_hooks", None)):
+            # Plugin has a function for resource hooks, call it
+            resource_hooks = plugin_instance.get_resource_hooks()
+
+            # Merge in these hooks with any existing values (from other plugins)
+            for resource_type, hooks in resource_hooks.items():
+                existing_hooks = self._resources.plugin.get(resource_type, [])
+                existing_hooks += hooks
+                self._resources.plugin[resource_type] = existing_hooks
+
+            # Increment our plugin count
+            self._resource_hook_plugins += 1
+
+    def load_plugins(self):
+        if not self._has_loaded_plugins:
+            self._load_plugins()
+
+    def _load_plugins(self):
+        discovered_plugins = entry_points(group="cloudradar.unit.plugins.hooks")
+
+        for single_plugin in discovered_plugins:
+            # Load the module
+            loaded_plugin = single_plugin.load()
+
+            self._load_hooks_from_single_plugin(loaded_plugin)
+
+        # Set the marker that we have installed plugins
+        self._has_loaded_plugins = True
 
     def _is_hook_suppressed(
         self, hook_name, template: "Template", resource: Union[Resource, None] = None
