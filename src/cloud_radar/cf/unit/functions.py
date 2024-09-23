@@ -831,16 +831,17 @@ def ref(template: "Template", var_name: str) -> Any:
     if "Parameters" in template.template:
         if var_name in template.template["Parameters"]:
             param_def = template.template["Parameters"][var_name]
-            if "Type" in param_def and param_def["Type"].startswith(
-                "AWS::SSM::Parameter::Value<"
-            ):
+            param_type = param_def.get("Type", "")
+            param_value = param_def["Value"]
+            if param_type.startswith("AWS::SSM::Parameter::Value<"):
                 # This is an SSM parameter value, look it up from our dynamic references
-                return template._get_dynamic_reference_value(
-                    "ssm", template.template["Parameters"][var_name]["Value"]
-                )
+                return template._get_dynamic_reference_value("ssm", param_value)
+            elif param_type == "CommaDelimitedList":
+                # Return the value split into a list of strings
+                return param_value.split(",")
 
             # If we get this far, regular parameter value to lookup & return
-            return template.template["Parameters"][var_name]["Value"]
+            return param_value
 
     if var_name in template.template["Resources"]:
         return var_name
