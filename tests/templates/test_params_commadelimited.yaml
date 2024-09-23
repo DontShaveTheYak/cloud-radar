@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Basic template to check CommaDelimitedList behaviours"
+
+Parameters:
+  AllowedWriters:
+    Type: CommaDelimitedList
+    Description: Principals allowed to write
+
+
+Outputs:
+  Joined:
+    Description: When the values are joined together
+    Value: !Join ["", !Ref AllowedWriters]
