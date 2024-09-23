@@ -1,10 +1,10 @@
 # What do these examples cover?
 
-The two subdirectories here, `resources` and `template`, show the two types of "hooks" that are available for defining common checks.
+The `template` and `resources` subdirectories show the two types of "hooks" that are available for defining common checks.
 
-The "hooks" functionality allows you to configure standardised tests once (for example through your `pytest` `conftest.py` file, possibly even using functions from an external library), and then each test stack you create will have your tests applied to them at the point the stack is rendered. In future it is planned to support a plugin system to discover these hooks through installed packages to simplify this configuration.
+This "hooks" functionality allows you to configure standardised tests once, and then have them ran each time your load a template or render a stack (depending on the type). These are intended to either be defined at one point in your repository, for example through fixtures in your `pytest` `conftest.py` file, or can be defined through an external library to allow reuse across all your repositories.
 
-Hooks can be suppressed using CloudFormation MetaData (in a similar fashion to other tools like cfn-lint), at either the template or resource level. The expected format is as follows, where the items in the list are the function names of the configured hooks.
+Hooks can be suppressed using CloudFormation MetaData (in a similar fashion to other tools like cfn-lint), at either the template or resource level. The expected format is as follows, where the items in the list are the function names of the configured hooks. As the name of your functions are used as the hook name in assertion messages and for the purposes of suppressions, it is recommended to try to keep them unique within your code.
 
 ```
     Metadata:
@@ -13,7 +13,9 @@ Hooks can be suppressed using CloudFormation MetaData (in a similar fashion to o
           - my_s3_encryption_hook
 ```
 
-# Template Hooks
+# Hook Types
+
+## Template Hooks
 
 Template hooks are evaluated at the point that the CloudFormation template is loaded in to Cloud-Radar by calling `Template.from_yaml` function. These are designed for performing template level checks that do not depend on the template having any processing performed on it for parameter/condition resolution etc.
 
@@ -23,7 +25,7 @@ The types of scenarios this could be used for include:
 
 A basic example is included in the [template/test_hooks_template.py](./template/test_hooks_template.py) file.
 
-## Defining a Hook
+### Defining a Hook function
 
 Template hooks are functions that take in a single parameter, `template`. These are expected to raise an error if their check does not pass.
 
@@ -46,17 +48,15 @@ def _object_prefix_check(items: List[str], expected_prefix: str):
             )
 ```
 
-The name of your function is used as the hook name in assertion messages and for the purposes of suppressions, so you should try to keep them unique within your code.
 
-## Configuring a Hook
-
-This type of hooks are set as a list of functions on the Template object.
+When being used at the repository level (and not discovered via a plugin), this type of hook are set as a list of functions on the Template object.
 
 ```
 Template.Hooks.template = [ my_parameter_prefix_checks ]
 ```
 
-# Resource Hooks
+
+## Resource Hooks
 
 Resource hooks are evaluated at the point of the stack being rendered by calling `template.create_stack`. These hooks are designed to be able to check aspects of the template *after* items like parameter substitution and conditions have been applied.
 
@@ -64,7 +64,7 @@ These are intended for much more in depth checks, specific to the type of a reso
 
 A basic example is included in the [resources/test_hooks_resources.py](./resources/test_hooks_resources.py) file.
 
-## Defining a Hook
+### Defining a Hook function
 
 Resource hooks are functions that take in a single `context` parameter. This is a `ResourceHookContext` object that contains the following:
 
@@ -87,7 +87,7 @@ def my_s3_encryption_hook(context: ResourceHookContext) -> None:
     context.resource_definition.assert_has_property("BucketEncryption")
 ```
 
-This is configured as a hook against the S3 resource type by
+When being used at the repository level (and not discovered via a plugin), this type of hook are set as a list of functions on the Template object. In this example, this is configured as a hook against the S3 resource type by
 
 ```python
 Template.Hooks.resources = {
@@ -97,3 +97,45 @@ Template.Hooks.resources = {
 ```
 
 In this setup a dict is set with the AWS Resource type as the key, and a list of functions for the value.
+
+
+# Plugin Support
+
+As noted in the introduction, Hooks can be brought in as plugins by including a dependency on a module. This allows common hooks to be shared across your organisation (or wider). In this setup, the structure of the individual hook functions remain the same, but there is a bit of additional packaging required.
+
+Cloud Radar discovers plugins using the [Package metadata](https://packaging.python.org/en/latest/guides/creating-and-discovering-plugins/#using-package-metadata) approach, looking for the group `cloudradar.unit.plugins.hooks`.
+
+This is defined in the `pyproject.toml` file of your plugin project, for example:
+```toml
+[project.entry-points.'cloudradar.unit.plugins.hooks']
+a = "cloud_radar_hook_plugin_example:ExamplePlugin"
+```
+Or the following if you are using Poetry as your Python build system like I am.
+
+```toml
+[tool.poetry.plugins."cloudradar.unit.plugins.hooks"]
+a = "cloud_radar_hook_plugin_example:ExamplePlugin"
+
+```
+
+This points to a class file, which can have two functions it in (Cloud Radar does allow either of these to be optional).
+
+```python
+class ExamplePlugin():
+
+    def get_template_hooks(self) -> list:
+        return [
+            template_mappings_prefix_checks,
+            template_parameters_prefix_checks,
+            template_resources_prefix_checks,
+            template_outputs_prefix_checks,
+        ]
+
+    def get_resource_hooks(self) -> dict:
+
+        return {
+            "AWS::S3::Bucket": [my_s3_encryption_hook]
+        }
+```
+
+These two functions return the same structures as we noted in the local examples that would be set on the `Template.Hooks.template` and `Template.Hooks.resources` properties.
