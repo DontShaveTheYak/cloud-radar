@@ -4,7 +4,7 @@ import pytest
 
 from cloud_radar.cf.unit._template import Template
 
-"""Tests the functionality of the functions with a CommaDelimitedList parameter."""
+"""Tests the functionality of the functions with a List type parameter."""
 
 
 @pytest.fixture
