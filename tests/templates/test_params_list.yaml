@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Basic template to check CommaDelimitedList behaviours"
+Description: "Basic template to check List Ref behaviours"
 
 Parameters:
   AllowedWriters:
