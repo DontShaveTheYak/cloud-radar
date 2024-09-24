@@ -6,8 +6,17 @@ Parameters:
     Type: CommaDelimitedList
     Description: Principals allowed to write
 
+  AllowedImages:
+    Type: List<AWS::EC2::Image::Id>
+    Description: AMIs that are allowed
+
 
 Outputs:
-  Joined:
+
+  JoinedWriters:
     Description: When the values are joined together
     Value: !Join ["", !Ref AllowedWriters]
+
+  JoinedImages:
+    Description: When the values are joined together
+    Value: !Join ["", !Ref AllowedImages]
