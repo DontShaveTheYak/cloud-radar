@@ -67,4 +67,4 @@ jobs:
           pip install poetry nox nox-poetry
 
       - name: Run Tests
-        run: nox
+        run: nox -p ${{ matrix.python-version }}

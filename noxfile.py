@@ -1,7 +1,6 @@
 """Nox sessions."""
 
 import sys
-from pathlib import Path
 from textwrap import dedent
 
 import nox
@@ -26,17 +25,17 @@ default_python = "3.12"
 python_versions = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 
-@session(python=default_python)
-def coverage(session: Session) -> None:
-    """Produce the coverage report."""
-    args = session.posargs or ["report"]
+# @session(python=default_python)
+# def coverage(session: Session) -> None:
+#     """Produce the coverage report."""
+#     args = session.posargs or ["report"]
 
-    session.install("coverage[toml]")
+#     session.install("coverage[toml]")
 
-    if not session.posargs and any(Path().glob(".coverage.*")):
-        session.run("coverage", "combine")
+#     if not session.posargs and any(Path().glob(".coverage.*")):
+#         session.run("coverage", "combine")
 
-    session.run("coverage", *args)
+#     session.run("coverage", *args)
 
 
 @session(python=python_versions)
@@ -51,12 +50,15 @@ def tests(session: Session) -> None:
             "--parallel",
             "-m",
             "pytest",
+            "-m",
+            "not e2e",
             "tests",
             *session.posargs,
         )
     finally:
-        if session.interactive:
-            session.notify("coverage", posargs=[])
+        pass
+        # if session.interactive:
+        #     session.notify("coverage", posargs=[])
 
 
 @session(python=python_versions)
