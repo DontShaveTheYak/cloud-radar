@@ -27,7 +27,7 @@ def test_constructor(template_dir, default_params):
 
     assert stack.config.config.project.regions[0] == "us-east-1"
 
-    assert stack.config.config.project.parameters is None
+    assert stack.config.config.project.parameters == {}
 
     stack = Stack(str(template))
 
