@@ -174,26 +174,29 @@ six = "*"
 
 [[package]]
 name = "cfn-lint"
-version = "0.87.11"
+version = "1.18.4"
 description = "Checks CloudFormation templates for practices and behaviour that could potentially be improved"
 optional = false
-python-versions = "!=4.0,<=4.0,>=3.8"
+python-versions = ">=3.8"
 files = [
-    {file = "cfn_lint-0.87.11-py3-none-any.whl", hash = "sha256:e9edc0f38570c52cbe63348d246ecbe6a4a56980a360d6606a831d5698fe6352"},
-    {file = "cfn_lint-0.87.11.tar.gz", hash = "sha256:7c5111300f5447cd2424f3ef226e1c59f34a99a116a385c28f5cbde317ac700b"},
+    {file = "cfn_lint-1.18.4-py3-none-any.whl", hash = "sha256:76741e76fa26f31bfacc3eb465eddd93ad535838d84fbc6dd092817d8e22d57f"},
+    {file = "cfn_lint-1.18.4.tar.gz", hash = "sha256:73dadc33d6a91c69651cb08fe919138ab4e2f6cf1be1e361f7c6dcbccd1527ba"},
 ]
 
 [package.dependencies]
 aws-sam-translator = ">=1.91.0"
-jschema-to-python = ">=1.2.3,<1.3.0"
 jsonpatch = "*"
-jsonschema = ">=3.0,<5"
-junit-xml = ">=1.9,<2.0"
 networkx = ">=2.4,<4"
 pyyaml = ">5.4"
-regex = ">=2021.7.1"
-sarif-om = ">=1.0.4,<1.1.0"
+regex = "*"
 sympy = ">=1.0.0"
+typing-extensions = "*"
+
+[package.extras]
+full = ["jschema-to-python (>=1.2.3,<1.3.0)", "junit-xml (>=1.9,<2.0)", "pydot", "sarif-om (>=1.0.4,<1.1.0)"]
+graph = ["pydot"]
+junit = ["junit-xml (>=1.9,<2.0)"]
+sarif = ["jschema-to-python (>=1.2.3,<1.3.0)", "sarif-om (>=1.0.4,<1.1.0)"]
 
 [[package]]
 name = "charset-normalizer"
@@ -574,22 +577,6 @@ files = [
 ]
 
 [[package]]
-name = "jschema-to-python"
-version = "1.2.3"
-description = "Generate source code for Python classes from a JSON schema."
-optional = false
-python-versions = ">= 2.7"
-files = [
-    {file = "jschema_to_python-1.2.3-py3-none-any.whl", hash = "sha256:8a703ca7604d42d74b2815eecf99a33359a8dccbb80806cce386d5e2dd992b05"},
-    {file = "jschema_to_python-1.2.3.tar.gz", hash = "sha256:76ff14fe5d304708ccad1284e4b11f96a658949a31ee7faed9e0995279549b91"},
-]
-
-[package.dependencies]
-attrs = "*"
-jsonpickle = "*"
-pbr = "*"
-
-[[package]]
 name = "jsonpatch"
 version = "1.32"
 description = "Apply JSON-Patches (RFC 6902)"
@@ -602,22 +589,6 @@ files = [
 
 [package.dependencies]
 jsonpointer = ">=1.9"
-
-[[package]]
-name = "jsonpickle"
-version = "2.2.0"
-description = "Python library for serializing any arbitrary object graph into JSON"
-optional = false
-python-versions = ">=2.7"
-files = [
-    {file = "jsonpickle-2.2.0-py2.py3-none-any.whl", hash = "sha256:de7f2613818aa4f234138ca11243d6359ff83ae528b2185efdd474f62bcf9ae1"},
-    {file = "jsonpickle-2.2.0.tar.gz", hash = "sha256:7b272918b0554182e53dc340ddd62d9b7f902fec7e7b05620c04f3ccef479a0e"},
-]
-
-[package.extras]
-docs = ["jaraco.packaging (>=3.2)", "rst.linker (>=1.9)", "sphinx"]
-testing = ["ecdsa", "enum34", "feedparser", "jsonlib", "numpy", "pandas", "pymongo", "pytest (>=3.5,!=3.7.3)", "pytest-black-multipy", "pytest-checkdocs (>=1.2.3)", "pytest-cov", "pytest-flake8 (<1.1.0)", "pytest-flake8 (>=1.1.1)", "scikit-learn", "sqlalchemy"]
-testing-libs = ["simplejson", "ujson", "yajl"]
 
 [[package]]
 name = "jsonpointer"
@@ -650,20 +621,6 @@ six = ">=1.11.0"
 [package.extras]
 format = ["idna", "jsonpointer (>1.13)", "rfc3987", "strict-rfc3339", "webcolors"]
 format-nongpl = ["idna", "jsonpointer (>1.13)", "rfc3339-validator", "rfc3986-validator (>0.1.0)", "webcolors"]
-
-[[package]]
-name = "junit-xml"
-version = "1.9"
-description = "Creates JUnit XML test result documents that can be read by tools such as Jenkins"
-optional = false
-python-versions = "*"
-files = [
-    {file = "junit-xml-1.9.tar.gz", hash = "sha256:de16a051990d4e25a3982b2dd9e89d671067548718866416faec14d9de56db9f"},
-    {file = "junit_xml-1.9-py2.py3-none-any.whl", hash = "sha256:ec5ca1a55aefdd76d28fcc0b135251d156c7106fa979686a4b48d62b761b4732"},
-]
-
-[package.dependencies]
-six = "*"
 
 [[package]]
 name = "markupsafe"
@@ -873,17 +830,6 @@ python-versions = ">=3.7"
 files = [
     {file = "pathspec-0.10.3-py3-none-any.whl", hash = "sha256:3c95343af8b756205e2aba76e843ba9520a24dd84f68c22b9f93251507509dd6"},
     {file = "pathspec-0.10.3.tar.gz", hash = "sha256:56200de4077d9d0791465aa9095a01d421861e405b5096955051deefd697d6f6"},
-]
-
-[[package]]
-name = "pbr"
-version = "5.10.0"
-description = "Python Build Reasonableness"
-optional = false
-python-versions = ">=2.6"
-files = [
-    {file = "pbr-5.10.0-py2.py3-none-any.whl", hash = "sha256:da3e18aac0a3c003e9eea1a81bd23e5a3a75d745670dcf736317b7d966887fdf"},
-    {file = "pbr-5.10.0.tar.gz", hash = "sha256:cfcc4ff8e698256fc17ea3ff796478b050852585aa5bae79ecd05b2ab7b39b9a"},
 ]
 
 [[package]]
@@ -1418,21 +1364,6 @@ botocore = ">=1.33.2,<2.0a.0"
 crt = ["botocore[crt] (>=1.33.2,<2.0a.0)"]
 
 [[package]]
-name = "sarif-om"
-version = "1.0.4"
-description = "Classes implementing the SARIF 2.1.0 object model."
-optional = false
-python-versions = ">= 2.7"
-files = [
-    {file = "sarif_om-1.0.4-py3-none-any.whl", hash = "sha256:539ef47a662329b1c8502388ad92457425e95dc0aaaf995fe46f4984c4771911"},
-    {file = "sarif_om-1.0.4.tar.gz", hash = "sha256:cd5f416b3083e00d402a92e449a7ff67af46f11241073eea0461802a3b5aef98"},
-]
-
-[package.dependencies]
-attrs = "*"
-pbr = "*"
-
-[[package]]
 name = "setuptools"
 version = "75.3.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -1624,4 +1555,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.14"
-content-hash = "5b104577776c00eef95000418d1e07f529e1bfe2fd65cdfff01853bac13f6d4a"
+content-hash = "09acccc87e57fdd79b9fc28714440db59f35376a4f4f11a9f4682c55fc48474f"
