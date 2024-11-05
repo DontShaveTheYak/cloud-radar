@@ -1,61 +1,71 @@
-import tempfile
+"""Nox sessions."""
+
+import sys
+from textwrap import dedent
 
 import nox
 
-nox.options.sessions = "lint", "mypy", "tests"
+try:
+    from nox_poetry import Session, session
+except ImportError:
+    message = f"""\
+    Nox failed to import the 'nox-poetry' package.
+
+    Please install it using the following command:
+
+    {sys.executable} -m pip install nox-poetry"""
+    raise SystemExit(dedent(message)) from None
+
+nox.options.sessions = "mypy", "tests"
 
 locations = "src", "tests", "noxfile.py"
 
+default_python = "3.12"
 
-def install_with_constraints(session, *args, **kwargs):
-    with tempfile.NamedTemporaryFile() as requirements:
+python_versions = ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+
+# @session(python=default_python)
+# def coverage(session: Session) -> None:
+#     """Produce the coverage report."""
+#     args = session.posargs or ["report"]
+
+#     session.install("coverage[toml]")
+
+#     if not session.posargs and any(Path().glob(".coverage.*")):
+#         session.run("coverage", "combine")
+
+#     session.run("coverage", *args)
+
+
+@session(python=python_versions)
+def tests(session: Session) -> None:
+    """Run the test suite."""
+    session.install(".")
+    session.install("coverage[toml]", "pytest", "pygments", "pytest-mock")
+    try:
         session.run(
-            "poetry",
-            "export",
-            "--only",
-            "dev",
-            "--format=requirements.txt",
-            "--without-hashes",
-            f"--output={requirements.name}",
-            external=True,
+            "coverage",
+            "run",
+            "--parallel",
+            "-m",
+            "pytest",
+            "-m",
+            "not e2e",
+            "tests",
+            *session.posargs,
         )
-        session.install("-r", requirements.name, *args, **kwargs)
+    finally:
+        pass
+        # if session.interactive:
+        #     session.notify("coverage", posargs=[])
 
 
-@nox.session(python="3.9")
-def coverage(session):
-    """Upload coverage data."""
-    install_with_constraints(session)
-    session.run("coverage", "xml", "--fail-under=0")
-    session.run("codecov", *session.posargs)
-
-
-@nox.session(python=["3.9", "3.8"])
-def tests(session):
-    args = session.posargs or ["--cov", "-m", "not e2e"]
-    session.run("poetry", "install", "--only", "main", external=True)
-    install_with_constraints(
-        session,
-    )
-    session.run("pytest", *args)
-
-
-@nox.session(python=["3.9", "3.8"])
-def lint(session):
+@session(python=python_versions)
+def mypy(session: Session) -> None:
+    """Type-check using mypy."""
     args = session.posargs or locations
-    install_with_constraints(session)
-    session.run("flake8", *args)
-
-
-@nox.session(python=["3.9", "3.8"])
-def mypy(session):
-    args = session.posargs or locations
-    install_with_constraints(session)
+    session.run_always("poetry", "install", external=True)
     session.run("mypy", *args)
-
-
-@nox.session(python="3.9")
-def black(session):
-    args = session.posargs or locations
-    install_with_constraints(session)
-    session.run("black", *args)
+    if not session.posargs:
+        session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")

@@ -320,7 +320,7 @@ See the [open issues](https://github.com/DontShaveTheYak/cloud-radar/issues) for
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-This project uses poetry to manage dependencies and pre-commit to run formatting, linting and tests. You will need to have both installed to your system as well as python 3.9.
+This project uses poetry to manage dependencies and pre-commit to run formatting, linting and tests. You will need to have both installed to your system as well as python 3.12.
 
 1. Fork the Project
 2. Setup environment (`poetry install`)
