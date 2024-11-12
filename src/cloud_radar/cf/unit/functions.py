@@ -8,7 +8,8 @@ import base64 as b64
 import ipaddress
 import json
 import re
-from typing import TYPE_CHECKING, Any, Callable, Dict, List  # noqa: I101
+from functools import cache
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional  # noqa: I101
 
 import requests
 
@@ -25,7 +26,7 @@ Dispatch = Dict[str, Callable[..., Any]]
 # The maps are a nested dictionary.
 Mapping = Dict[str, Dict[str, Dict[str, Any]]]
 
-REGION_DATA = None
+REGION_DATA: Optional[List[dict]] = None
 
 
 def base64(_t: "Template", value: Any) -> str:
@@ -877,6 +878,7 @@ def get_region_azs(region_name: str) -> List[str]:
     raise Exception(f"Unable to find region {region_name}.")
 
 
+@cache
 def _fetch_region_data() -> List[dict]:
     """Fetchs Region JSON from URL.
 
