@@ -407,6 +407,15 @@ def test_fetch_region_data(mocker):
 
     mock_r = mock_post.return_value
 
+    mock_r.status_code = 500
+
+    functions._fetch_region_data()
+
+    mock_r.raise_for_status.assert_called()
+
+    # need to reset the mock
+    mock_r.reset_mock()
+
     mock_r.status_code = 200
 
     result = functions._fetch_region_data()
@@ -414,14 +423,6 @@ def test_fetch_region_data(mocker):
     assert result == "TestData"
 
     mock_r.raise_for_status.assert_not_called()
-
-    assert result == "TestData"
-
-    mock_r.status_code = 500
-
-    functions._fetch_region_data()
-
-    mock_r.raise_for_status.assert_called()
 
 
 def test_import_value():
