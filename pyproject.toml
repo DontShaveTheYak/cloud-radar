@@ -42,7 +42,7 @@ mypy = "^1.0.0"
 types-requests = "^2.28.11"
 types-PyYAML = "^6.0.12"
 cfn-lint = "1.18.4"
-setuptools = {version = "75.3.0", python = ">=3.12"}
+setuptools = {version = "75.4.0", python = ">=3.12"}
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
