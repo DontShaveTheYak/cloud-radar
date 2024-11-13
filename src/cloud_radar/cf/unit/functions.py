@@ -888,9 +888,14 @@ def _fetch_region_data() -> List[dict]:
 
     url = "https://raw.githubusercontent.com/jsonmaur/aws-regions/master/regions.json"
 
-    r = requests.get(url)
+    # set user-agent to avoid being throttled
+    headers = {"User-Agent": "cloud-radar"}
 
-    if not r.status_code == requests.codes.ok:
+    r = requests.get(url, headers=headers)
+
+    if not r.ok:
+        print(f"Failed to fetch region data from {url}.")
+        print(r.text)
         r.raise_for_status()
 
     return json.loads(r.text)
