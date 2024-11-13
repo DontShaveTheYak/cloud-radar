@@ -158,7 +158,6 @@ class HookProcessor:
     ) -> None:
         # Iterate through the resources in the rendered stack
         for logical_id in stack.data.get("Resources", {}):
-            print("Got resource " + logical_id)
             resource_definition = stack.get_resource(logical_id)
 
             resource_type = resource_definition.get("Type")
