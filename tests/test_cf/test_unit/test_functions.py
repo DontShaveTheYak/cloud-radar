@@ -408,6 +408,7 @@ def test_fetch_region_data(mocker):
     mock_r = mock_post.return_value
 
     mock_r.status_code = 500
+    mock_r.ok = False
 
     functions._fetch_region_data()
 

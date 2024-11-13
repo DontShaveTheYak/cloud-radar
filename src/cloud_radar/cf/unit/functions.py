@@ -890,7 +890,9 @@ def _fetch_region_data() -> List[dict]:
 
     r = requests.get(url)
 
-    if not r.status_code == requests.codes.ok:
+    if not r.ok:
+        print(f"Failed to fetch region data from {url}.")
+        print(r.text)
         r.raise_for_status()
 
     return json.loads(r.text)
