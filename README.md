@@ -307,7 +307,6 @@ A real functional testing example using Pytest can be seen [here](./tests/test_c
 ### Unit
 - Add full functionality to pseudo variables.
   * Variables like `Partition`, `URLSuffix` should change if the region changes.
-  * Variables like `StackName` and `StackId` should have a better default than ""
 - Handle References to resources that shouldn't exist.
   * It's currently possible that a `!Ref` to a Resource stays in the final template even if that resource is later removed because of a conditional.
 
