@@ -27,7 +27,7 @@ class Template:
     NoValue: str = ""  # Not yet implemented
     Partition: str = "aws"  # Other regions not implemented
     Region: str = "us-east-1"
-    StackId: str = ""  # If left black this will be generated
+    StackId: str = ""  # If left blank this will be generated
     StackName: str = "my-cloud-radar-stack"
     URLSuffix: str = "amazonaws.com"  # Other regions not implemented
 
