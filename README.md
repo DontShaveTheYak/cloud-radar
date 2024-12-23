@@ -169,8 +169,8 @@ The default values for pseudo parameters:
 | **NoValue**      | ""              |
 | **Partition**    | "aws"           |
 | Region           | "us-east-1"     |
-| **StackId**      | ""              |
-| **StackName**    | ""              |
+| StackId          | (generated based on other values)              |
+| StackName    | "my-cloud-radar-stack"              |
 | **URLSuffix**    | "amazonaws.com" |
 _Note: Bold variables are not fully implemented yet see the [Roadmap](#roadmap)_
 

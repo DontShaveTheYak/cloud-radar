@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 
@@ -26,8 +27,8 @@ class Template:
     NoValue: str = ""  # Not yet implemented
     Partition: str = "aws"  # Other regions not implemented
     Region: str = "us-east-1"
-    StackId: str = ""  # Not yet implemented
-    StackName: str = ""  # Not yet implemented
+    StackId: str = ""  # If left black this will be generated
+    StackName: str = "my-cloud-radar-stack"
     URLSuffix: str = "amazonaws.com"  # Other regions not implemented
 
     def __init__(
@@ -310,6 +311,19 @@ class Template:
 
         return template
 
+    # If the StackId variable is not set, generate a value for it
+    def _get_populated_stack_id(self) -> str:
+        if not Template.StackId:
+            # Not explicitly set, generate a value
+            unique_uuid = uuid.uuid4()
+
+            return (
+                f"arn:{Template.Partition}:cloudformation:{self.Region}:"
+                f"{Template.AccountId}:stack/{Template.StackName}/{unique_uuid}"
+            )
+
+        return Template.StackId
+
     def create_stack(
         self,
         params: Optional[Dict[str, str]] = None,
@@ -318,6 +332,7 @@ class Template:
     ):
         if region:
             self.Region = region
+        self.StackId = self._get_populated_stack_id()
 
         self.render(params, parameters_file=parameters_file)
 
