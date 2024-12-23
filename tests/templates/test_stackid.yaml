@@ -1,0 +1,16 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Creates an S3 bucket to store logs."
+
+Resources:
+  UniqueBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub
+          - 'my-test-${stack_region}-${uniqifier}-bucket'
+          - # AWS::StackId has this format
+            # arn:aws:cloudformation:us-west-2:123456789012:stack/teststack/51af3dc0-da77-11e4-872e-1234567db123
+            # Trying to capture the last piece after the '-'
+            # As stack name could contain "-"s, split on the "/"s first
+            uniqifier: !Select [ 4, !Split [ "-",  !Select [ 2, !Split [ "/", !Ref AWS::StackId ] ] ] ]
+            # Usually you would refer to AWS:::Region, but trying to test StackId creation works as expected
+            stack_region: !Select [ 3, !Split [":", !Ref AWS::StackId]]
