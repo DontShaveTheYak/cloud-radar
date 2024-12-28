@@ -455,7 +455,18 @@ def get_att(template: "Template", values: Any) -> str:
     if resource_name not in template.template["Resources"]:
         raise KeyError(f"Fn::GetAtt - Resource {resource_name} not found in template.")
 
-    return f"{resource_name}.{att_name}"
+    # Get the resource definition
+    resource = template.template["Resources"][resource_name]
+
+    # Check if there is a value in the resource Metadata for this attribute.
+    # If the attribute requested is in the metadata, return it.
+    # Otherwise use the string value of "{resource_name}.{att_name}"
+
+    metadata = resource.get("Metadata", {})
+    cloud_radar_metadata = metadata.get("Cloud-Radar", {})
+    attribute_values = cloud_radar_metadata.get("attribute-values", {})
+
+    return attribute_values.get(att_name, f"{resource_name}.{att_name}")
 
 
 def get_azs(_t: "Template", region: Any) -> List[str]:
