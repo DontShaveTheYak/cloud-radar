@@ -1,31 +1,36 @@
-[tool.poetry]
+[project]
 name = "cloud-radar"
 version = "0.0.0"
 description = "Run functional tests on cloudformation stacks."
 readme = "README.md"
-authors = ["Levi Blaney <shadycuz@gmail.com>"]
+authors = [
+    { name = "Levi Blaney", email = "shadycuz+dev@gmail.com" },
+]
 license = "Apache-2.0"
-repository = "https://github.com/DontShaveTheYak/cloud-radar"
 keywords = ["aws", "cloudformation", "cloud-radar", "testing", "taskcat", "cloud", "radar"]
+requires-python = ">=3.9,<4.0"
+dynamic = [ "classifiers" ]
+dependencies = [
+  "taskcat >=0.9.41, <1.0.0",
+  "cfn-flip >=1.3.0, <2.0.0",
+  "botocore >=1.35.36, <2.0.0",
+]
+[project.urls]
+Repository = "https://github.com/DontShaveTheYak/cloud-radar"
+Issues = "https://github.com/DontShaveTheYak/cloud-radar/issues"
+Changelog = "https://github.com/DontShaveTheYak/cloud-radar/releases"
+
+
+[tool.poetry]
+requires-poetry = ">=2.0"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
-  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Testing"
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<3.14"
-taskcat = "^0.9.41"
-cfn-flip = "^1.3.0"
-botocore = {version = ">=1.35.36", python = ">=3.13"}
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
