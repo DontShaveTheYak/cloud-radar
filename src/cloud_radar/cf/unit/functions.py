@@ -944,6 +944,9 @@ ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
     "Fn::And": ALLOWED_NESTED_CONDITIONS,
     "Fn::Equals": {**ALLOWED_NESTED_CONDITIONS, "Fn::Join": join, "Fn::Select": select},
     "Fn::If": {
+        # If is a tricky one - I think it is the only function where the rules about
+        # what other functions can be used in it only applies to the first argument
+        # of the function. That doesn't really work in our current setup.
         "Fn::Base64": base64,
         "Fn::FindInMap": find_in_map,
         "Fn::GetAtt": get_att,

@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  ContainerCommand:
+    Type: String
+  ContainerSecretsArn:
+    Type: String
+
+Conditions:
+  ConfigureContainerCommand: !Not [!Equals [!Ref ContainerCommand, ""]]
+  ConfigureContainerSecrets: !Not [!Equals [!Ref ContainerSecretsArn, ""]]
+
+Resources:
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Command: !If
+            - ConfigureContainerCommand
+            - !Split [" ", !Ref ContainerCommand]
+            - !Ref "AWS::NoValue"
+          Secrets: !If
+            - ConfigureContainerSecrets
+            - Fn::Transform:
+                Name: 'UnpackEcsContainerSecretsMacro'
+                Parameters:
+                  ContainerSecretArn: !Ref ContainerSecretsArn
+            - !Ref "AWS::NoValue"

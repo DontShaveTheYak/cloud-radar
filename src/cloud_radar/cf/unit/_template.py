@@ -381,10 +381,21 @@ class Template:
                 if key not in allowed_func:
                     raise ValueError(f"{key} with value ({value}) not allowed here")
 
-                value = self.resolve_values(
-                    value,
-                    functions.ALLOWED_FUNCTIONS[key],
-                )
+                if key == "Fn::If":
+                    # Need a special case for this one as the first parameter uses
+                    # different allowed function rules than the other two parameters.
+                    # There is probably a cleaner way to do this!
+                    value = [
+                        # the condition function
+                        self.resolve_values(value[0], functions.ALLOWED_FUNCTIONS[key]),
+                        self.resolve_values(value[1], functions.INTRINSICS),
+                        self.resolve_values(value[2], functions.INTRINSICS),
+                    ]
+                else:
+                    value = self.resolve_values(
+                        value,
+                        functions.ALLOWED_FUNCTIONS[key],
+                    )
 
                 funct_result = allowed_func[key](self, value)
 
