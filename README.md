@@ -169,8 +169,8 @@ The default values for pseudo parameters:
 | **NoValue**      | ""              |
 | **Partition**    | "aws"           |
 | Region           | "us-east-1"     |
-| **StackId**      | ""              |
-| **StackName**    | ""              |
+| StackId          | (generated based on other values)              |
+| StackName    | "my-cloud-radar-stack"              |
 | **URLSuffix**    | "amazonaws.com" |
 _Note: Bold variables are not fully implemented yet see the [Roadmap](#roadmap)_
 
@@ -209,6 +209,24 @@ dynamic_references = {
 }
 
 template = Template(template_content, dynamic_references=dynamic_references)
+```
+
+There are cases where the default behaviour of our `GetAtt` implementation may not be sufficient and you need a more accurate returned value. When unit testing there are no real AWS resources created, and cloud-radar does not attempt to realistically generate attribute values - a string is always returned. This works good enough most of the time, but there are some cases where if you are attempting to apply intrinsic functions against the attribute value it needs to be more correct. When this occurs, you can add Metadata to the template to provide test values to use.
+
+```
+Resources:
+  MediaPackageV2Channel:
+    Type: AWS::MediaPackageV2::Channel
+    Metadata:
+      Cloud-Radar:
+        attribute-values:
+        # Default behaviour of a string is not good enough here, the attribute value is expected to be a List.
+          IngestEndpointUrls:
+            - http://one.example.com
+            - http://two.example.com
+    Properties:
+      ChannelGroupName: dev_video_1
+      ChannelName: !Sub ${AWS::StackName}-MediaPackageChannel
 ```
 
 A real unit testing example using Pytest can be seen [here](./tests/test_cf/test_examples/test_unit.py)
@@ -307,7 +325,6 @@ A real functional testing example using Pytest can be seen [here](./tests/test_c
 ### Unit
 - Add full functionality to pseudo variables.
   * Variables like `Partition`, `URLSuffix` should change if the region changes.
-  * Variables like `StackName` and `StackId` should have a better default than ""
 - Handle References to resources that shouldn't exist.
   * It's currently possible that a `!Ref` to a Resource stays in the final template even if that resource is later removed because of a conditional.
 
