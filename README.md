@@ -6,7 +6,7 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![Python][python-shield]][pypi-url]
+[![Python][py-versions-shield]][pypi-url]
 [![Latest][version-shield]][pypi-url]
 [![Tests][test-shield]][test-url]
 [![Coverage][codecov-shield]][codecov-url]
@@ -365,6 +365,7 @@ Levi - [@shady_cuz](https://twitter.com/shady_cuz)
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [python-shield]: https://img.shields.io/pypi/pyversions/cloud-radar?style=for-the-badge
+[py-versions-shield]: https://img.shields.io/pypi/pyversions/cloud-radar?style=for-the-badge
 [version-shield]: https://img.shields.io/pypi/v/cloud-radar?label=latest&style=for-the-badge
 [pypi-url]: https://pypi.org/project/cloud-radar/
 [test-shield]: https://img.shields.io/github/actions/workflow/status/DontShaveTheYak/cloud-radar/test.yml?label=Tests&style=for-the-badge
