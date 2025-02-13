@@ -31,7 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r .scripts/requirements.txt
-          pip install poetry==1.4.2
+          pip install poetry
 
       - name: Get Latest Tag
         id: latest_tag
@@ -81,7 +81,7 @@ jobs:
           architecture: x64
 
       - name: Setup Poetry
-        run: pip install poetry==1.4.2
+        run: pip install poetry
 
       - name: Publish to PyPI
         run: |
