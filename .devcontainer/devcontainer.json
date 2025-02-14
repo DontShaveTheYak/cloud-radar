@@ -23,7 +23,7 @@
 					"editor.defaultFormatter": "ms-python.black-formatter",
 					"editor.formatOnSave": true,
 					"editor.codeActionsOnSave": {
-						"source.organizeImports": true
+						"source.organizeImports": "always"
 					}
 				  },
 				  "isort.args":["--profile", "black"]
@@ -36,7 +36,8 @@
 				"njpwerner.autodocstring",
 				"ms-python.black-formatter",
 				"ms-python.flake8",
-				"ms-python.isort"
+				"ms-python.isort",
+				"ms-python.mypy-type-checker"
 			]
 		}
 	},
