@@ -81,6 +81,7 @@ class Template:
         self.transforms: Optional[Union[str, List[str]]] = self.template.get(
             "Transform", None
         )
+        self.allowed_functions: functions.Dispatch = self.load_allowed_functions()
 
         # All loaded, validate against any template level hooks
         # that have been configured
@@ -207,7 +208,7 @@ class Template:
             # If we get this far then we do not support this type of configuration file
             raise ValueError("Parameter file is not in a supported format")
 
-    def load_allowed_functions(self) -> functions.Dispatch:
+    def load_allowed_functions(self):
         """Loads the allowed functions for this template.
 
         Raises:
@@ -231,8 +232,9 @@ class Template:
             return {**functions.ALL_FUNCTIONS, **transform_functions}
 
         if isinstance(self.transforms, list):
-            # dict of transform functions
+
             transform_functions = {}
+
             for transform in self.transforms:
                 if transform not in functions.TRANSFORMS:
                     raise ValueError(f"Transform {transform} not supported")
@@ -249,13 +251,8 @@ class Template:
     def render_all_sections(self, template: Dict[str, Any]) -> Dict[str, Any]:
         """Solves all conditionals, references and pseudo variables for all sections"""
 
-        allowed_functions = self.load_allowed_functions()
-
         if "Conditions" in template:
-            template["Conditions"] = self.resolve_values(
-                template["Conditions"],
-                allowed_functions,
-            )
+            template["Conditions"] = self.resolve_values(template["Conditions"])
 
         template_sections = ["Resources", "Outputs"]
 
@@ -278,10 +275,7 @@ class Template:
                     if not condition_value:
                         continue
 
-                template[section][r_name] = self.resolve_values(
-                    r_value,
-                    allowed_functions,
-                )
+                template[section][r_name] = self.resolve_values(r_value)
 
         return template
 
@@ -346,7 +340,6 @@ class Template:
     def resolve_values(  # noqa: max-complexity: 13
         self,
         data: Any,
-        allowed_func: functions.Dispatch,
     ) -> Any:
         """Recurses through a Cloudformation template. Solving all
         references and variables along the way.
@@ -366,10 +359,7 @@ class Template:
                 # This takes care of keys that not intrinsic functions,
                 #  except for the condition func
                 if "Fn::" not in key and key != "Condition":
-                    data[key] = self.resolve_values(
-                        value,
-                        allowed_func,
-                    )
+                    data[key] = self.resolve_values(value)
                     continue
 
                 # Takes care of the tricky 'Condition' key
@@ -387,21 +377,15 @@ class Template:
                         return functions.condition(self, value)
 
                     # Normal key like in an IAM role
-                    data[key] = self.resolve_values(
-                        value,
-                        allowed_func,
-                    )
+                    data[key] = self.resolve_values(value)
                     continue
 
-                if key not in allowed_func:
+                if key not in self.allowed_functions:
                     raise ValueError(f"{key} with value ({value}) not allowed here")
 
-                value = self.resolve_values(
-                    value,
-                    functions.ALLOWED_FUNCTIONS[key],
-                )
+                value = self.resolve_values(value)
 
-                funct_result = allowed_func[key](self, value)
+                funct_result = self.allowed_functions[key](self, value)
 
                 if isinstance(funct_result, str):
                     # If the result is a string then process any
@@ -412,13 +396,7 @@ class Template:
 
             return data
         elif isinstance(data, list):
-            return [
-                self.resolve_values(
-                    item,
-                    allowed_func,
-                )
-                for item in data
-            ]
+            return [self.resolve_values(item) for item in data]
         elif isinstance(data, str):
             return self.resolve_dynamic_references(data)
         else:

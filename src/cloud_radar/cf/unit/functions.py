@@ -283,9 +283,7 @@ def condition(template: "Template", name: Any) -> bool:
     condition_value = template.template["Conditions"][name]
 
     if not isinstance(condition_value, bool):
-        condition_value: bool = template.resolve_values(  # type: ignore
-            condition_value, allowed_func=ALLOWED_NESTED_CONDITIONS
-        )
+        condition_value: bool = template.resolve_values(condition_value)  # type: ignore
 
     return condition_value
 
@@ -940,106 +938,6 @@ INTRINSICS: Dispatch = {
 ALL_FUNCTIONS: Dispatch = {
     **CONDITIONS,
     **INTRINSICS,
-}
-
-ALLOWED_NESTED_CONDITIONS: Dispatch = {
-    "Fn::FindInMap": find_in_map,
-    "Ref": ref,
-    **CONDITIONS,
-}
-
-# Cloudformation only allows certain functions to be called from inside
-# other functions. The keys are the function name and the values are the
-# functions that are allowed to be nested inside it.
-ALLOWED_FUNCTIONS: Dict[str, Dispatch] = {
-    "Fn::And": ALLOWED_NESTED_CONDITIONS,
-    "Fn::Equals": {**ALLOWED_NESTED_CONDITIONS, "Fn::Join": join, "Fn::Select": select},
-    "Fn::If": {
-        "Fn::Base64": base64,
-        "Fn::FindInMap": find_in_map,
-        "Fn::GetAtt": get_att,
-        "Fn::GetAZs": get_azs,
-        "Fn::If": if_,
-        "Fn::Join": join,
-        "Fn::Select": select,
-        "Fn::Sub": sub,
-        "Ref": ref,
-        "Fn::ImportValue": import_value,
-    },
-    "Fn::Not": ALLOWED_NESTED_CONDITIONS,
-    "Fn::Or": ALLOWED_NESTED_CONDITIONS,
-    "Condition": {},  # Only allows strings
-    "Fn::Base64": ALL_FUNCTIONS,
-    "Fn::Cidr": {
-        "Fn::Select": select,
-        "Ref": ref,
-    },
-    "Fn::FindInMap": {
-        "Fn::FindInMap": find_in_map,
-        "Ref": ref,
-    },
-    "Fn::GetAtt": {},  # This one is complicated =/
-    "Fn::GetAZs": {
-        "Ref": ref,
-    },
-    "Fn::ImportValue": {
-        "Fn::Base64": base64,
-        "Fn::FindInMap": find_in_map,
-        "Fn::If": if_,
-        "Fn::Join": join,
-        "Fn::Select": select,
-        "Fn::Split": split,
-        "Fn::Sub": sub,
-        "Ref": ref,
-    },  # Import value can't depend on resources (not implemented)
-    "Fn::Join": {
-        "Fn::Base64": base64,
-        "Fn::FindInMap": find_in_map,
-        "Fn::GetAtt": get_att,
-        "Fn::GetAZs": get_azs,
-        "Fn::If": if_,
-        "Fn::ImportValue": import_value,
-        "Fn::Join": join,
-        "Fn::Split": split,
-        "Fn::Select": select,
-        "Fn::Sub": sub,
-        "Ref": ref,
-    },
-    "Fn::Select": {
-        "Fn::FindInMap": find_in_map,
-        "Fn::GetAtt": get_att,
-        "Fn::GetAZs": get_azs,
-        "Fn::If": if_,
-        "Fn::Split": split,
-        "Ref": ref,
-    },
-    "Fn::Split": {
-        "Fn::Base64": base64,
-        "Fn::FindInMap": find_in_map,
-        "Fn::GetAtt": get_att,
-        "Fn::GetAZs": get_azs,
-        "Fn::If": if_,
-        "Fn::ImportValue": import_value,
-        "Fn::Join": join,
-        "Fn::Split": split,
-        "Fn::Select": select,
-        "Fn::Sub": sub,
-        "Ref": ref,
-    },
-    "Fn::Sub": {
-        "Fn::Base64": base64,
-        "Fn::FindInMap": find_in_map,
-        "Fn::GetAtt": get_att,
-        "Fn::GetAZs": get_azs,
-        "Fn::If": if_,
-        "Fn::ImportValue": import_value,
-        "Fn::Join": join,
-        "Fn::Select": select,
-        "Ref": ref,
-        "Fn::Sub": sub,
-    },
-    "Fn::Transform": {},  # Transform isn't fully implemented
-    "Ref": {},  # String only.
 }
 
 # Extra functions that are allowed if the template is using a transform.
