@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Basic template to check GetAtt behaviours"
+
+Resources:
+  MediaPackageV2Channel:
+    Type: AWS::MediaPackageV2::Channel
+    Metadata:
+      Cloud-Radar:
+        attribute-values:
+        # When unit testing there are no real AWS resources created, and cloud-radar
+        # does not attempt to realistically generate attribute values - a string is always
+        # returned. This works good enough most of the time, but there are some cases where
+        # if you are attempting to apply intrinsic functions against the attribute value
+        # it needs to be more correct.
+        #
+        # In this case, the attribute value is expected to be a List, not a string.
+          IngestEndpointUrls:
+            - http://one.example.com
+            - http://two.example.com
+    Properties:
+      ChannelGroupName: dev_video_1
+      ChannelName: !Sub ${AWS::StackName}-MediaPackageChannel
+
+Outputs:
+  ChannelArn:
+    Description: The ARN of the MediaPackageV2 Channel.
+    Value: !GetAtt MediaPackageV2Channel.Arn
+  ChannelCreatedAt:
+    Description: The creation timestamp of the MediaPackageV2 Channel.
+    Value: !GetAtt MediaPackageV2Channel.CreatedAt
+  ChannelIngestEndpointUrl1:
+    Description: The first IngestEndpointUrl of the MediaPackageV2 Channel.
+    Value: !Select [0, !GetAtt MediaPackageV2Channel.IngestEndpointUrls]
+  ChannelIngestEndpointUrl2:
+    Description: The second IngestEndpointUrl of the MediaPackageV2 Channel.
+    Value: !Select [1, !GetAtt MediaPackageV2Channel.IngestEndpointUrls]

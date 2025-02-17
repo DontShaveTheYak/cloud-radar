@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python 3.12
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@v5.4.0
         with:
           python-version: '3.12'
           architecture: x64
@@ -31,7 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r .scripts/requirements.txt
-          pip install poetry==1.4.2
+          pip install poetry
 
       - name: Get Latest Tag
         id: latest_tag
@@ -75,13 +75,13 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Setup Python 3.12
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@v5.4.0
         with:
           python-version: '3.12'
           architecture: x64
 
       - name: Setup Poetry
-        run: pip install poetry==1.4.2
+        run: pip install poetry
 
       - name: Publish to PyPI
         run: |
@@ -101,7 +101,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Create Draft Release
-        uses: release-drafter/release-drafter@v6.0.0
+        uses: release-drafter/release-drafter@v6.1.0
         if: github.base_ref == 'develop'
         with:
           tag: ${{needs.tag.outputs.tag}}
@@ -111,7 +111,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: release-drafter/release-drafter@v6.0.0
+        uses: release-drafter/release-drafter@v6.1.0
         if: github.base_ref == 'master'
         with:
           tag: ${{needs.tag.outputs.tag}}

@@ -1,39 +1,45 @@
-[tool.poetry]
+[project]
 name = "cloud-radar"
 version = "0.0.0"
 description = "Run functional tests on cloudformation stacks."
 readme = "README.md"
-authors = ["Levi Blaney <shadycuz@gmail.com>"]
+authors = [
+    { name = "Levi Blaney", email = "shadycuz+dev@gmail.com" },
+    { name = "David Hutchison", email = "david@devwithimagination.com" }
+]
 license = "Apache-2.0"
-repository = "https://github.com/DontShaveTheYak/cloud-radar"
 keywords = ["aws", "cloudformation", "cloud-radar", "testing", "taskcat", "cloud", "radar"]
+requires-python = ">=3.9,<4.0"
+dynamic = [ "classifiers" ]
+dependencies = [
+  "taskcat >=0.9.41, <1.0.0",
+  "cfn-flip >=1.3.0, <2.0.0",
+  "botocore >=1.35.36, <2.0.0",
+]
+[project.urls]
+Repository = "https://github.com/DontShaveTheYak/cloud-radar"
+Issues = "https://github.com/DontShaveTheYak/cloud-radar/issues"
+Changelog = "https://github.com/DontShaveTheYak/cloud-radar/releases"
+
+
+[tool.poetry]
+requires-poetry = ">=2.0"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
-  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Testing"
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<3.14"
-taskcat = "^0.9.41"
-cfn-flip = "^1.3.0"
-botocore = {version = ">=1.35.36", python = ">=3.13"}
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 coverage = {extras = ["toml"], version = "^7.0.0"}
 pytest-cov = "^6.0.0"
 pytest-mock = "^3.6.1"
-isort = "^5.12.0"
-black = "^24.0.0"
+isort = "^6.0.0"
+black = "^25.0.0"
 flake8 = "^7.0.0"
 flake8-black = "^0.3.0"
 flake8-isort = "^6.1.0"
@@ -41,8 +47,11 @@ flake8-bugbear = "^24.0.0"
 mypy = "^1.0.0"
 types-requests = "^2.28.11"
 types-PyYAML = "^6.0.12"
-cfn-lint = "1.19.0"
-setuptools = {version = "75.4.0", python = ">=3.12"}
+cfn-lint = "1.25.1"
+setuptools = {version = "75.8.0", python = ">=3.12"}
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
