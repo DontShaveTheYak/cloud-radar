@@ -23,7 +23,7 @@
 					"editor.defaultFormatter": "ms-python.black-formatter",
 					"editor.formatOnSave": true,
 					"editor.codeActionsOnSave": {
-						"source.organizeImports": true
+						"source.organizeImports": "always"
 					}
 				  },
 				  "isort.args":["--profile", "black"]
@@ -36,7 +36,8 @@
 				"njpwerner.autodocstring",
 				"ms-python.black-formatter",
 				"ms-python.flake8",
-				"ms-python.isort"
+				"ms-python.isort",
+				"ms-python.mypy-type-checker"
 			]
 		}
 	},
@@ -44,6 +45,7 @@
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "poetry install && pre-commit install",
+	"postStartCommand": "nohup bash -c '/workspaces/cloud-radar/.devcontainer/extra_pythons.sh > /workspaces/cloud-radar/extra_pythons.log 2>&1 &'",
 	// "postStartCommand": "",
 	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "ubuntu"
