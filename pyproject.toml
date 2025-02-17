@@ -5,6 +5,7 @@ description = "Run functional tests on cloudformation stacks."
 readme = "README.md"
 authors = [
     { name = "Levi Blaney", email = "shadycuz+dev@gmail.com" },
+    { name = "David Hutchison", email = "david@devwithimagination.com" }
 ]
 license = "Apache-2.0"
 keywords = ["aws", "cloudformation", "cloud-radar", "testing", "taskcat", "cloud", "radar"]
