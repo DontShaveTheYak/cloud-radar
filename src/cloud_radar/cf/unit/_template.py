@@ -232,7 +232,6 @@ class Template:
             return {**functions.ALL_FUNCTIONS, **transform_functions}
 
         if isinstance(self.transforms, list):
-
             transform_functions = {}
 
             for transform in self.transforms:
@@ -505,8 +504,14 @@ class Template:
 
         t_params: dict = self.template["Parameters"]
 
-        if set(parameters) - set(t_params):
-            raise ValueError("You passed a Parameter that was not in the Template.")
+        params_not_in_template = set(parameters) - set(t_params)
+        if params_not_in_template:
+            raise ValueError(
+                (
+                    "You supplied one or more Parameters that were not in the "
+                    f"Template - {params_not_in_template}"
+                )
+            )
 
         for p_name, p_value in t_params.items():
             if p_name in parameters:
@@ -519,7 +524,10 @@ class Template:
 
             if "Default" not in p_value:
                 raise ValueError(
-                    "Must provide values for parameters that don't have a default value."
+                    (
+                        f'Must provide values for parameter "{p_name}" '
+                        "that does not have a default value."
+                    )
                 )
 
             t_params[p_name]["Value"] = p_value["Default"]
