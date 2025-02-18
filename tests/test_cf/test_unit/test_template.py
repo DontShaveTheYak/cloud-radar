@@ -173,12 +173,11 @@ def test_set_params():
         }
     }
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(
+        ValueError,
+        match=r"Must provide values for parameter \"Test\" that does not have a default value.",
+    ):
         template.set_parameters()
-
-    assert "Must provide values for parameters that don't have a default value." in str(
-        e.value
-    ), "Should throw correct exception."
 
     template.set_parameters({"Test": "value"})
 
@@ -186,12 +185,11 @@ def test_set_params():
         "Parameters"
     ], "Should set the value to what we pass in."
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(
+        ValueError,
+        match=r"You supplied one or more Parameters that were not in the Template - {'Bar'}",
+    ):
         template.set_parameters({"Bar": "Foo"})
-
-    assert "You passed a Parameter that was not in the Template." in str(
-        e.value
-    ), "Should throw correct exception."
 
     template.template = {"Parameters": {"Test": {"Default": "default"}}}
 
