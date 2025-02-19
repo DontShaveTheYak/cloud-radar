@@ -27,11 +27,12 @@ class Output(UserDict):
         Args:
             value (Any): The value to compare the output value to.
         """
-        acutal_value = self.get_value()
+        actual_value = self.get_value()
 
-        assert (
-            value == acutal_value
-        ), f"Output '{self.name}' actual value did not match input value."
+        assert value == actual_value, (
+            f"Output '{self.name}' actual value ({actual_value}) did not match"
+            f" input value ({value})."
+        )
 
     def has_export(self):
         """Check if the output has an export."""

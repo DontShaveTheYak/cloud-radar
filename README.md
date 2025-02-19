@@ -211,7 +211,7 @@ dynamic_references = {
 template = Template(template_content, dynamic_references=dynamic_references)
 ```
 
-There are cases where the default behaviour of our `GetAtt` implementation may not be sufficient and you need a more accurate returned value. When unit testing there are no real AWS resources created, and cloud-radar does not attempt to realistically generate attribute values - a string is always returned. This works good enough most of the time, but there are some cases where if you are attempting to apply intrinsic functions against the attribute value it needs to be more correct. When this occurs, you can add Metadata to the template to provide test values to use.
+There are cases where the default behaviour of our `Ref` and `GetAtt` implementations may not be sufficient and you need a more accurate returned value. When unit testing there are no real AWS resources created, and cloud-radar does not attempt to realistically generate attribute values - a string is always returned. For `Ref` this is the logical resource name, for `GetAtt` this is `<logical resource name>.<attribute name>`. This works good enough most of the time, but there are some cases where if you are attempting to apply intrinsic functions against these value it needs to be more correct. When this occurs, you can add Metadata to the template to provide test values to use.
 
 ```
 Resources:
@@ -219,6 +219,7 @@ Resources:
     Type: AWS::MediaPackageV2::Channel
     Metadata:
       Cloud-Radar:
+        ref: arn:aws:mediapackagev2:region:AccountId:ChannelGroup/ChannelGroupName/Channel/ChannelName
         attribute-values:
         # Default behaviour of a string is not good enough here, the attribute value is expected to be a List.
           IngestEndpointUrls:
@@ -228,6 +229,7 @@ Resources:
       ChannelGroupName: dev_video_1
       ChannelName: !Sub ${AWS::StackName}-MediaPackageChannel
 ```
+If you are unable to modify the template itself, it is also possible to inject this metadata as part of the unit test. See [this test case](./tests/test_cf/test_unit/test_functions_ref.py) for an example.
 
 A real unit testing example using Pytest can be seen [here](./tests/test_cf/test_examples/test_unit.py)
 

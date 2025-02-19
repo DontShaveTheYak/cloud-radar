@@ -459,12 +459,15 @@ def get_att(template: "Template", values: Any) -> str:
     # Check if there is a value in the resource Metadata for this attribute.
     # If the attribute requested is in the metadata, return it.
     # Otherwise use the string value of "{resource_name}.{att_name}"
-
-    metadata = resource.get("Metadata", {})
-    cloud_radar_metadata = metadata.get("Cloud-Radar", {})
+    cloud_radar_metadata = _get_cloud_radar_metadata(resource)
     attribute_values = cloud_radar_metadata.get("attribute-values", {})
 
     return attribute_values.get(att_name, f"{resource_name}.{att_name}")
+
+
+def _get_cloud_radar_metadata(resource) -> dict:
+    metadata = resource.get("Metadata", {})
+    return metadata.get("Cloud-Radar", {})
 
 
 def get_azs(_t: "Template", region: Any) -> List[str]:
@@ -857,7 +860,13 @@ def ref(template: "Template", var_name: str) -> Any:
             return param_value
 
     if var_name in template.template["Resources"]:
-        return var_name
+        # Check if there is a value in the resource Metadata for this reference.
+        # If the ref requested is in the metadata, return it.
+        # Otherwise use the string value of the logical resource name
+        cloud_radar_metadata = _get_cloud_radar_metadata(
+            template.template["Resources"][var_name]
+        )
+        return cloud_radar_metadata.get("ref", var_name)
 
     raise Exception(f"Fn::Ref - {var_name} is not a valid Resource or Parameter.")
 
