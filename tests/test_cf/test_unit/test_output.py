@@ -52,7 +52,7 @@ def test_output_assert_value_is(stack: Stack):
 
     with pytest.raises(
         AssertionError,
-        match="Output 'LogsBucketName' actual value did not match input value.",
+        match="Output 'LogsBucketName' actual value \(LogsBucket\) did not match input value \(test-logs-bucket2\).",
     ):
         output.assert_value_is("test-logs-bucket2")
 
