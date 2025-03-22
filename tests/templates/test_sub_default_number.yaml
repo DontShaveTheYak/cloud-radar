@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+    pTargetDatabaseClusterNumber:
+      Type: Number
+      Description: The number of the Aurora Cluster where the database is hosted
+      Default: 1
+    pProduct:
+      Type: String
+      Description: The resources are part of which product
+      Default: dummy
+Resources:
+  rFunctionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${pProduct}-${AWS::Region}-lmb-sg'
+      GroupDescription: Lambda security group
+      VpcId:  !Sub '{{resolve:ssm:/${pProduct}/dev/${AWS::Region}/vpc/id/horizontal-vpc}}'
+      SecurityGroupEgress:
+        - IpProtocol: 'tcp'
+          DestinationSecurityGroupId: !Sub '{{resolve:ssm:/${pProduct}/dev/${AWS::Region}/aurora/cluster/${pTargetDatabaseClusterNumber}/sec-grp/id}}'
+          Description: !Sub 'RDS Access to cluster ${pTargetDatabaseClusterNumber}'
+          FromPort: 5432
+          ToPort: 5432
