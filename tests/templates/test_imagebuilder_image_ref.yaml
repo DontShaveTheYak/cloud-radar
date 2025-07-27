@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Basic template to check Ref behaviours"
+
+Resources:
+  DummyEcrImage:
+    Type: AWS::ImageBuilder::Image
+    Properties:
+      ContainerRecipeArn: "ContainerRecipeArn"
+      EnhancedImageMetadataEnabled: true
+      InfrastructureConfigurationArn: "InfrastructureConfigurationArn"
+      ImageTestsConfiguration:
+        ImageTestsEnabled: false
+  MediaPackageV2Channel:
+    Type: AWS::MediaPackageV2::Channel
+    Properties:
+      ChannelGroupName: dev_video_1
+      ChannelName: !Sub ${AWS::StackName}-MediaPackageChannel
+
+
+Outputs:
+  ImageArn:
+    Description: The image ARN
+    Value: !Ref DummyEcrImage
+  ImageName:
+    Description: The name part of the image ARN
+    Value: !Select [1, !Split ['/', !Ref DummyEcrImage]]
+  ChannelArn:
+    Description: The name part of the image ARN
+    Value: !Ref MediaPackageV2Channel

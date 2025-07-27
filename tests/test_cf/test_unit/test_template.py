@@ -124,60 +124,28 @@ def test_resolve():
 
     template = Template(t)
 
-    result = template.resolve_values({"Ref": "Test"}, functions.ALL_FUNCTIONS)
+    result = template.resolve_values({"Ref": "Test"})
 
     assert result == "test", "Should resolve the value from the template."
 
     with pytest.raises(Exception) as ex:
-        result = template.resolve_values({"Ref": "Test2"}, functions.ALL_FUNCTIONS)
+        result = template.resolve_values({"Ref": "Test2"})
 
     assert "not a valid Resource" in str(ex)
 
-    result = template.resolve_values(
-        {"level1": {"Fn::If": ["test", "True", "False"]}}, functions.ALL_FUNCTIONS
-    )
+    result = template.resolve_values({"level1": {"Fn::If": ["test", "True", "False"]}})
 
     assert result == {"level1": "True"}, "Should resolve nested dicts."
 
     result = template.resolve_values(
-        [{"level1": {"Fn::If": ["test", "True", "False"]}}], functions.ALL_FUNCTIONS
+        [{"level1": {"Fn::If": ["test", "True", "False"]}}]
     )
 
     assert result == [{"level1": "True"}], "Should resolve nested lists."
 
-    result = template.resolve_values("test", functions.ALL_FUNCTIONS)
+    result = template.resolve_values("test")
 
     assert result == "test", "Should return regular strings."
-
-
-def test_function_order():
-    t = {
-        "Parameters": {"Test": {"Type": "String", "Value": "test"}},
-        "Conditions": {"test": True},
-    }
-
-    template = Template(t)
-
-    test_if = {
-        "Fn::Cidr": {
-            "Fn::If": "select",
-        }
-    }
-
-    with pytest.raises(ValueError) as ex:
-        _ = template.resolve_values(test_if, functions.ALL_FUNCTIONS)
-
-    assert "Fn::If with value" in str(ex)
-
-    with pytest.raises(ValueError) as ex:
-        _ = template.resolve_values({"Fn::Base64": ""}, functions.CONDITIONS)
-
-    assert "Fn::Base64 with value" in str(ex)
-
-    with pytest.raises(ValueError) as ex:
-        _ = template.resolve_values({"Fn::Not": ""}, functions.INTRINSICS)
-
-    assert "Fn::Not with value" in str(ex)
 
 
 def test_set_params():
@@ -205,12 +173,11 @@ def test_set_params():
         }
     }
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(
+        ValueError,
+        match=r"Must provide values for parameter \"Test\" that does not have a default value.",
+    ):
         template.set_parameters()
-
-    assert "Must provide values for parameters that don't have a default value." in str(
-        e.value
-    ), "Should throw correct exception."
 
     template.set_parameters({"Test": "value"})
 
@@ -218,12 +185,11 @@ def test_set_params():
         "Parameters"
     ], "Should set the value to what we pass in."
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(
+        ValueError,
+        match=r"You supplied one or more Parameters that were not in the Template - {'Bar'}",
+    ):
         template.set_parameters({"Bar": "Foo"})
-
-    assert "You passed a Parameter that was not in the Template." in str(
-        e.value
-    ), "Should throw correct exception."
 
     template.template = {"Parameters": {"Test": {"Default": "default"}}}
 
