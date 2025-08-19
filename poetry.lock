@@ -1542,14 +1542,14 @@ widechars = ["wcwidth"]
 
 [[package]]
 name = "taskcat"
-version = "0.9.55"
+version = "0.9.57"
 description = "An OpenSource Cloudformation Deployment Framework"
 optional = false
 python-versions = "<4.0,>=3.8.0"
 groups = ["main"]
 files = [
-    {file = "taskcat-0.9.55-py3-none-any.whl", hash = "sha256:7fd89c7bbd74e33f0e3c0d9983fa17f1341f2f241d757b3a567d35c5002900dc"},
-    {file = "taskcat-0.9.55.tar.gz", hash = "sha256:38e090859713da0513bf3f38ff58adcd57dfb3d013ada4f90923aa198b3455a6"},
+    {file = "taskcat-0.9.57-py3-none-any.whl", hash = "sha256:7f7020483d585562f88a8f6ddc30cc6c80331b0508db32f4c2dea7bc01e62af2"},
+    {file = "taskcat-0.9.57.tar.gz", hash = "sha256:6419ffaf0725a54b39d33c31dc2b9f7466fb2c4737ac34b2f76330cb5e545d6e"},
 ]
 
 [package.dependencies]
@@ -1562,7 +1562,7 @@ dulwich = ">=0.19,<1.0"
 GitPython = ">=3.1.43"
 jinja2 = ">=3.1.1,<4.0"
 jsonschema = ">=3.0,<4.0"
-markupsafe = "2.0.1"
+markupsafe = ">=2.0.1"
 pathspec = "0.10.3"
 pip = "*"
 PyYAML = ">=6.0,<7.0"
