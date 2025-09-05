@@ -51,6 +51,37 @@ class ResourceHookCollection:
 
 
 @dataclass
+class StackHookContext:
+    """Class that contains the context for a stack hook to evaluate.
+
+    Attributes:
+        stack (Stack): the rendered stack
+        template (Template): the template that is being rendered to produce the stack
+    """
+
+    stack: Stack
+    template: "Template"
+
+
+@dataclass
+class StackHookCollection:
+    """
+    Class that holds the two collections of hooks that we can evaluate against
+    a rendered stack.
+
+    Each Callable is expected to take in a single parameter - an instance of
+    StackHookContext.
+
+    Attributes:
+        plugin (List[Callable]): The list of hooks which were loaded from plugins.
+        local (List[Callable]): The list of hooks which were defined with the template.
+    """
+
+    plugin: List[Callable]
+    local: List[Callable]
+
+
+@dataclass
 class TemplateHookCollection:
     """
     Class that holds the two collections of hooks that we can evaluate
@@ -93,6 +124,7 @@ class HookProcessor:
         self._resources: ResourceHookCollection = ResourceHookCollection(
             plugin={}, local={}
         )
+        self._stack: StackHookCollection = StackHookCollection(plugin=[], local=[])
         self._template: TemplateHookCollection = TemplateHookCollection(
             plugin=[], local=[]
         )
@@ -105,6 +137,14 @@ class HookProcessor:
     @template.setter
     def template(self, value: List[Callable]):
         self._template.local = value
+
+    @property
+    def stack(self):
+        return self._stack.local
+
+    @stack.setter
+    def stack(self, value: List[Callable]):
+        self._stack.local = value
 
     @property
     def resources(self):
@@ -149,6 +189,23 @@ class HookProcessor:
 
                 single_hook(template=template)
 
+    def _evaluate_stack_hooks(
+        self, hook_type: str, hooks: List[Callable], stack: Stack, template: "Template"
+    ) -> None:
+
+        hook_context = StackHookContext(
+            stack=stack,
+            template=template,
+        )
+
+        for single_hook in hooks:
+            # Only process the hook if it has not been marked as to be
+            # ignored
+            if not self._is_hook_suppressed(single_hook.__name__, template, None):
+                print(f"Processing {hook_type} hook {single_hook.__name__}")
+
+                single_hook(context=hook_context)
+
     def _evaluate_resource_hooks(
         self,
         hook_type: str,
@@ -187,6 +244,12 @@ class HookProcessor:
         # Evaluate the global hooks first, then the local ones
         self._evaluate_resource_hooks("plugin", self._resources.plugin, stack, template)
         self._evaluate_resource_hooks("local", self._resources.local, stack, template)
+
+    def evaluate_stack_hooks(self, stack: Stack, template: "Template") -> None:
+
+        # Evaluate the global hooks first, then the local ones
+        self._evaluate_stack_hooks("plugin", self._stack.plugin, stack, template)
+        self._evaluate_stack_hooks("local", self._stack.local, stack, template)
 
     def evaluate_template_hooks(self, template: "Template") -> None:
         print(template)

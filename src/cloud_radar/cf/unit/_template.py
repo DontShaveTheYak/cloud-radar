@@ -332,6 +332,7 @@ class Template:
         stack = Stack(self.template)
 
         # Evaluate any hooks prior to returning this stack
+        self.Hooks.evaluate_stack_hooks(stack, self)
         self.Hooks.evaluate_resource_hooks(stack, self)
 
         return stack

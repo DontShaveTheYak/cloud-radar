@@ -1,6 +1,6 @@
 # What do these examples cover?
 
-The two subdirectories here, `resources` and `template`, show the two types of "hooks" that are available for defining common checks.
+The three subdirectories here, `resources`, `stack` and `template`, show the three types of "hooks" that are available for defining common checks.
 
 The "hooks" functionality allows you to configure standardised tests once (for example through your `pytest` `conftest.py` file, possibly even using functions from an external library), and then each test stack you create will have your tests applied to them at the point the stack is rendered. In future it is planned to support a plugin system to discover these hooks through installed packages to simplify this configuration.
 
@@ -54,6 +54,60 @@ This type of hooks are set as a list of functions on the Template object.
 
 ```
 Template.Hooks.template = [ my_parameter_prefix_checks ]
+```
+
+# Stack Hooks
+
+Stack hooks are evaluated at the point of the stack being rendered by calling `template.create_stack`. These hooks are designed to be able to check aspects of the template *after* items like parameter substitution and conditions have been applied.
+
+These are intended to allow for more in depth checks that are not specific to a Resource type. The initial inception of this feature was to allow programatically calling CloudFormation linting tools on the stack after rendering, to catch cases where combinations of parameters resulted in resource naming that exceeded allowed lengths.
+
+A basic example is included in the [resources/test_hooks_stack.py](./resources/test_hooks_stack.py) file, which does a manual length check of an output after parameters have been applied.
+
+## Defining a Hook
+
+Resource hooks are functions that take in a single `context` parameter. This is a `StackHookContext` object that contains the following:
+
+```
+    stack: Stack
+    template: "Template"
+```
+
+These type of hooks are expected to raise an error if their check does not pass.
+
+As contrived example, this hook verifies that no output has a value longer than our defined maximum length.
+
+```python
+# Example hook that checks that no output has a value longer than 25 characters
+def my_output_check(context: StackHookContext) -> None:
+
+    # Get all the outputs
+    outputs = context.stack.data["Outputs"]
+    for output_name in outputs:
+        output = context.stack.get_output(output_name)
+
+        output_value = output.get_value()
+        print(f"Output value: {output_value}")
+
+        # Check the lengths
+        if len(output_value) >= 25:
+            raise ValueError(
+                (
+                    f"{output_name} - All outputs are expected to have a "
+                    "value less than 25 characters"
+                )
+            )
+
+```
+
+The name of your function is used as the hook name in assertion messages and for the purposes of suppressions, so you should try to keep them unique within your code.
+
+## Configuring a Hook
+
+This type of hooks are set as a list of functions on the Template object.
+
+```
+Template.Hooks.stack = [my_output_check]
 ```
 
 # Resource Hooks
