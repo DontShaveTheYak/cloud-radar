@@ -134,14 +134,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.40.31"
+version = "1.40.32"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "botocore-1.40.31-py3-none-any.whl", hash = "sha256:4033a00f8c6a4b5c3acb30af9283963123917227a437e5fc165189d07bd3cf8a"},
-    {file = "botocore-1.40.31.tar.gz", hash = "sha256:9496b91bbe40ed01d341dc8f6ff0492d7f546e80f1a862b00ec5bc9045fa3324"},
+    {file = "botocore-1.40.32-py3-none-any.whl", hash = "sha256:a7cc409648aaf08a7d1aab76c675818868a0b76745b9deb478f91c1d8898aa8a"},
+    {file = "botocore-1.40.32.tar.gz", hash = "sha256:e027adff8d6e177b396dff68340dafa7548b84aeb2cff149d84844d56ad29bae"},
 ]
 
 [package.dependencies]
