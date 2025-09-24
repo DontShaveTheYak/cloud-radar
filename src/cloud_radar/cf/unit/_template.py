@@ -83,6 +83,9 @@ class Template:
         )
         self.allowed_functions: functions.Dispatch = self.load_allowed_functions()
 
+        # Load any plugins, if we have not already loaded them
+        self.Hooks.load_plugins()
+
         # All loaded, validate against any template level hooks
         # that have been configured
         self.Hooks.evaluate_template_hooks(self)
