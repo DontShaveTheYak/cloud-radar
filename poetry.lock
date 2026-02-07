@@ -1606,14 +1606,14 @@ widechars = ["wcwidth"]
 
 [[package]]
 name = "taskcat"
-version = "0.9.57"
+version = "0.9.58"
 description = "An OpenSource Cloudformation Deployment Framework"
 optional = false
 python-versions = "<4.0,>=3.8.0"
 groups = ["main"]
 files = [
-    {file = "taskcat-0.9.57-py3-none-any.whl", hash = "sha256:7f7020483d585562f88a8f6ddc30cc6c80331b0508db32f4c2dea7bc01e62af2"},
-    {file = "taskcat-0.9.57.tar.gz", hash = "sha256:6419ffaf0725a54b39d33c31dc2b9f7466fb2c4737ac34b2f76330cb5e545d6e"},
+    {file = "taskcat-0.9.58-py3-none-any.whl", hash = "sha256:b6da1fa0e394a5cec55f119dd378666c1e0a7d5b925e5f4bbb6a154c1bbdadfe"},
+    {file = "taskcat-0.9.58.tar.gz", hash = "sha256:4c42b09ec5ff36f4b92d5374162ee464d93c6451ab2f826fcd172c139d53fef1"},
 ]
 
 [package.dependencies]
