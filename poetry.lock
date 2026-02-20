@@ -139,14 +139,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.42.44"
+version = "1.42.53"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "botocore-1.42.44-py3-none-any.whl", hash = "sha256:ba406b9243a20591ee87d53abdb883d46416705cebccb639a7f1c923f9dd82df"},
-    {file = "botocore-1.42.44.tar.gz", hash = "sha256:47ba27360f2afd2c2721545d8909217f7be05fdee16dd8fc0b09589535a0701c"},
+    {file = "botocore-1.42.53-py3-none-any.whl", hash = "sha256:1255db56bc0a284a8caa182c20966277e6c8871b6881cf816d40e993fa5da503"},
+    {file = "botocore-1.42.53.tar.gz", hash = "sha256:0bc1a2e1b6ae4c8397c9bede3bb9007b4f16e159ef2ca7f24837e31d5860caac"},
 ]
 
 [package.dependencies]
@@ -158,7 +158,7 @@ urllib3 = [
 ]
 
 [package.extras]
-crt = ["awscrt (==0.29.2)"]
+crt = ["awscrt (==0.31.2)"]
 
 [[package]]
 name = "certifi"
