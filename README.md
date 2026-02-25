@@ -119,6 +119,11 @@ Cloud-Radar requires python >= 3.8
    ```sh
    pip install cloud-radar
    ```
+2. (Optional - only required if using the E2E/functional testing feature) Install additional dependencies with pip.
+   ```sh
+   pip install cloud-radar[e2e]
+   ```
+
 
 ## Usage
 <details>
