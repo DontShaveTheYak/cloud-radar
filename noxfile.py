@@ -51,7 +51,7 @@ nox.options.sessions = ("tests",)
 @session(python=python_versions)
 def tests(session: Session) -> None:
     """Run the test suite."""
-    session.install(".")
+    session.install(".[e2e]")
     session.install("coverage[toml]", "pytest", "pygments", "pytest-mock")
     try:
         session.run(
