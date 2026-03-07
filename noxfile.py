@@ -1,7 +1,15 @@
 """Nox sessions."""
 
 import sys
+from pathlib import Path
 from textwrap import dedent
+
+try:
+    import tomllib
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "tomllib not found. Run nox with Python 3.11+ (or install 'tomli')."
+    ) from exc
 
 import nox
 
@@ -16,13 +24,15 @@ except ImportError:
     {sys.executable} -m pip install nox-poetry"""
     raise SystemExit(dedent(message)) from None
 
+with Path("pyproject.toml").open("rb") as _f:
+    _config = tomllib.load(_f)["tool"]["cloud-radar"]
+
+python_versions: list[str] = _config["python-versions"]
+default_python: str = _config["default-python"]
+
 nox.options.sessions = "mypy", "tests"
 
 locations = "src", "tests", "noxfile.py"
-
-default_python = "3.12"
-
-python_versions = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 
 # @session(python=default_python)

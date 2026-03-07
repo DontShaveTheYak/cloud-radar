@@ -1,6 +1,9 @@
 FROM ubuntu:24.04
 
 ARG USERNAME=ubuntu
+# Default Python minor version. Should match [tool.cloud-radar].default-python in pyproject.toml.
+# The latest available patch will be resolved automatically via pyenv.
+ARG DEFAULT_PYTHON=3.13
 
 # Ensure apt is in non-interactive to avoid prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -37,8 +40,9 @@ ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
 
 # Install the required python versions (this takes a bit usually) so we do lots of cacheing
 RUN --mount=type=cache,target=/home/${USERNAME}/.pyenv/cache,uid=1000 \
-    pyenv install -s 3.12.7 && \
-    pyenv global 3.12.7 && \
+    PYTHON_VERSION=$(pyenv latest --known "$DEFAULT_PYTHON") && \
+    pyenv install -s "$PYTHON_VERSION" && \
+    pyenv global "$PYTHON_VERSION" && \
     pyenv rehash
 
 # Install poetry to manage our python project
