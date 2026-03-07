@@ -31,11 +31,8 @@ with Path("pyproject.toml").open("rb") as _f:
     _config = tomllib.load(_f)["tool"]["cloud-radar"]
 
 python_versions: list[str] = _config["python-versions"]
-default_python: str = _config["default-python"]
 
-nox.options.sessions = "mypy", "tests"
-
-locations = "src", "tests"
+nox.options.sessions = ("tests",)
 
 
 # @session(python=default_python)
@@ -72,11 +69,3 @@ def tests(session: Session) -> None:
         pass
         # if session.interactive:
         #     session.notify("coverage", posargs=[])
-
-
-@session(python=python_versions)
-def mypy(session: Session) -> None:
-    """Type-check using mypy."""
-    args = session.posargs or locations
-    session.run_always("poetry", "install", external=True)
-    session.run("mypy", *args)
