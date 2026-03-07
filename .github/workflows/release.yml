@@ -45,12 +45,12 @@ jobs:
         id: bump
         run: |
           if [ "$BUMP_RULE" = "None" ]; then
-              echo "::set-output name=next_tag::$(echo $BASE_TAG)"
+              echo "next_tag=$BASE_TAG" >> $GITHUB_OUTPUT
           else
               poetry version $BASE_TAG
               poetry version $BUMP_RULE
               NEXT_TAG=$(poetry version -s)
-              echo "::set-output name=next_tag::$(echo $NEXT_TAG)"
+              echo "next_tag=$NEXT_TAG" >> $GITHUB_OUTPUT
           fi
         env:
           BASE_TAG: ${{ steps.calculate.outputs.base_tag }}
