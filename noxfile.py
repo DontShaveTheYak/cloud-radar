@@ -65,7 +65,7 @@ def tests(session: Session) -> None:
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or locations
-    session.run_always("poetry", "install", external=True)
+    session.run_always("poetry", "install", "--all-extras", external=True)
     session.run("mypy", *args)
     if not session.posargs:
         session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
