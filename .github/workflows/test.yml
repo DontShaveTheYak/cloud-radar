@@ -85,6 +85,7 @@ jobs:
           name: coverage-${{ matrix.python-version }}
           path: .coverage.*
           if-no-files-found: error
+          include-hidden-files: true
 
   coverage:
     needs: [multi, get-versions]
