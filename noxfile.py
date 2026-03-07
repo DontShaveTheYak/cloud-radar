@@ -63,6 +63,7 @@ def tests(session: Session) -> None:
             "-m",
             "not e2e",
             "tests",
+            "examples",
             *session.posargs,
         )
     finally:
