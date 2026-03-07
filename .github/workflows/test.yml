@@ -74,7 +74,7 @@ jobs:
       # Install Poetry Nox and nox-poetry
       - name: Setup Environment
         run: |
-          pip install poetry nox nox-poetry "tomli; python_version < '3.11'"
+          pip install poetry poetry-plugin-export nox nox-poetry "tomli; python_version < '3.11'"
 
       - name: Run Tests
         run: nox -p ${{ matrix.python-version }}
