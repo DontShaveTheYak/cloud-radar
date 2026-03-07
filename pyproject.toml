@@ -36,7 +36,7 @@ classifiers = [
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 coverage = {extras = ["toml"], version = "^7.0.0"}
-pytest-cov = "^6.0.0"
+pytest-cov = "^7.0.0"
 pytest-mock = "^3.6.1"
 isort = "^6.0.0"
 black = "^25.0.0"
