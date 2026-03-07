@@ -9,7 +9,7 @@ authors = [
 ]
 license = "Apache-2.0"
 keywords = ["aws", "cloudformation", "cloud-radar", "testing", "taskcat", "cloud", "radar"]
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 dynamic = [ "classifiers" ]
 dependencies = [
   "cfn-flip >=1.3.0, <2.0.0",
@@ -23,6 +23,11 @@ Changelog = "https://github.com/DontShaveTheYak/cloud-radar/releases"
 
 [project.optional-dependencies]
 e2e = ["taskcat >=0.9.41, <1.0.0"]
+[tool.cloud-radar]
+# Single source of truth for supported Python versions.
+# Used by noxfile.py, .github/workflows/test.yml, and .devcontainer/extra_pythons.sh.
+python-versions = ["3.10", "3.11", "3.12", "3.13"]
+default-python = "3.13"
 
 [tool.poetry]
 requires-poetry = ">=2.0"

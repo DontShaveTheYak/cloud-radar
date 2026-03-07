@@ -23,7 +23,7 @@ repos:
 
       - id: mypy
         name: mypy
-        entry: poetry run mypy src tests noxfile.py
+        entry: poetry run mypy src tests
         language: system
         pass_filenames: false
         types: [python]

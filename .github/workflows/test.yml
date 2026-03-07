@@ -10,7 +10,28 @@ on:
       - '.github/workflows/pr_checks.yml'
 
 jobs:
+  get-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.get.outputs.versions }}
+      default: ${{ steps.get.outputs.default }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
+
+      - name: Read Python versions from pyproject.toml
+        id: get
+        run: |
+          python3 -c "
+          import tomllib, json
+          with open('pyproject.toml', 'rb') as f:
+              cfg = tomllib.load(f)['tool']['cloud-radar']
+          print('versions=' + json.dumps(cfg['python-versions']))
+          print('default=' + cfg['default-python'])
+          " >> $GITHUB_OUTPUT
+
   pre_commit:
+    needs: get-versions
     runs-on: ubuntu-latest
     name: Pre-commit
     steps:
@@ -20,36 +41,25 @@ jobs:
       - name: Setup Latest Python
         uses: actions/setup-python@v6.2.0
         with:
-          python-version: 3.13
+          python-version: ${{ needs.get-versions.outputs.default }}
           architecture: x64
 
       - name: Setup Poetry
         run: |
           pip install poetry
-          poetry install --all-extras
-
-      - name: Setup Coverage
-        run: pip install coverage[toml]
+          poetry install
 
       - name: Run Pre-commit
         uses: pre-commit/action@v3.0.1
-
-      - name: Convert Coverage
-        run: coverage xml --fail-under=0
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5.5.2
-        with:
-          flags: unit
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+        env:
+          SKIP: pytest
 
   multi:
-    needs: pre_commit
+    needs: [pre_commit, get-versions]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.13']
+        python-version: ${{ fromJSON(needs.get-versions.outputs.versions) }}
     name: Python ${{ matrix.python-version }}
     steps:
       - name: Checkout Code
@@ -64,7 +74,51 @@ jobs:
       # Install Poetry Nox and nox-poetry
       - name: Setup Environment
         run: |
-          pip install poetry nox nox-poetry
+          pip install poetry poetry-plugin-export nox nox-poetry "tomli; python_version < '3.11'"
 
       - name: Run Tests
         run: nox -p ${{ matrix.python-version }}
+
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: .coverage.*
+          if-no-files-found: error
+          include-hidden-files: true
+
+  coverage:
+    needs: [multi, get-versions]
+    runs-on: ubuntu-latest
+    name: Coverage
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Python
+        uses: actions/setup-python@v5.4.0
+        with:
+          python-version: ${{ needs.get-versions.outputs.default }}
+          architecture: x64
+
+      - name: Install Coverage
+        run: pip install coverage[toml]
+
+      - name: Download Coverage Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: Combine Coverage
+        run: coverage combine
+
+      - name: Convert Coverage
+        run: coverage xml --fail-under=0
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4.6.0
+        with:
+          flags: unit
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
