@@ -6,10 +6,13 @@ from textwrap import dedent
 
 try:
     import tomllib
-except ModuleNotFoundError as exc:
-    raise SystemExit(
-        "tomllib not found. Run nox with Python 3.11+ (or install 'tomli')."
-    ) from exc
+except ModuleNotFoundError:
+    try:
+        import tomli as tomllib  # type: ignore[no-redef]
+    except ModuleNotFoundError as exc:
+        raise SystemExit(
+            "tomllib/tomli not found. Run nox with Python 3.11+ or install 'tomli'."
+        ) from exc
 
 import nox
 
@@ -32,7 +35,7 @@ default_python: str = _config["default-python"]
 
 nox.options.sessions = "mypy", "tests"
 
-locations = "src", "tests", "noxfile.py"
+locations = "src", "tests"
 
 
 # @session(python=default_python)
@@ -77,5 +80,3 @@ def mypy(session: Session) -> None:
     args = session.posargs or locations
     session.run_always("poetry", "install", external=True)
     session.run("mypy", *args)
-    if not session.posargs:
-        session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
