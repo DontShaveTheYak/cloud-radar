@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import os
 import sys
 from typing import Any, Dict
 
@@ -37,7 +38,8 @@ def get_action(pull_request: str) -> str:
 
 
 def set_output(name: str, value: str):
-    print(f"::set-output name={name}::{value}")
+    with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+        fh.write(f"{name}={value}\n")
 
 
 def prerelease(rule: str) -> str:
