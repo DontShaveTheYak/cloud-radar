@@ -39,7 +39,7 @@ classifiers = [
 ]
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
+pytest = "^9.0.0"
 coverage = {extras = ["toml"], version = "^7.0.0"}
 pytest-cov = "^7.0.0"
 pytest-mock = "^3.6.1"
