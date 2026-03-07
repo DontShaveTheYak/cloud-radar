@@ -119,6 +119,11 @@ Cloud-Radar requires python >= 3.8
    ```sh
    pip install cloud-radar
    ```
+2. (Optional - only required if using the E2E/functional testing feature) Install additional dependencies with pip.
+   ```sh
+   pip install cloud-radar[e2e]
+   ```
+
 
 ## Usage
 <details>
@@ -342,7 +347,7 @@ Contributions are what make the open-source community such an amazing place to l
 This project uses poetry to manage dependencies and pre-commit to run formatting, linting and tests. You will need to have both installed to your system as well as python 3.12.
 
 1. Fork the Project
-2. Setup environment (`poetry install`)
+2. Setup environment (`poetry install`, or `poetry install --all-extras` if you are working on the e2e/taskcat integration)
 3. Setup commit hooks (`pre-commit install`)
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)

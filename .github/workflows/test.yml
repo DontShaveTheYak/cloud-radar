@@ -26,7 +26,7 @@ jobs:
       - name: Setup Poetry
         run: |
           pip install poetry
-          poetry install
+          poetry install --all-extras
 
       - name: Setup Coverage
         run: pip install coverage[toml]
