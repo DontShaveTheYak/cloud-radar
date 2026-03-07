@@ -15,18 +15,18 @@ jobs:
     name: Pre-commit
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
 
       - name: Setup Latest Python
-        uses: actions/setup-python@v5.4.0
+        uses: actions/setup-python@v6.2.0
         with:
-          python-version: 3.12
+          python-version: 3.13
           architecture: x64
 
       - name: Setup Poetry
         run: |
           pip install poetry
-          poetry install
+          poetry install --all-extras
 
       - name: Setup Coverage
         run: pip install coverage[toml]
@@ -38,7 +38,7 @@ jobs:
         run: coverage xml --fail-under=0
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5.4.0
+        uses: codecov/codecov-action@v5.5.2
         with:
           flags: unit
           fail_ci_if_error: false
@@ -53,10 +53,10 @@ jobs:
     name: Python ${{ matrix.python-version }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.4.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64

@@ -714,7 +714,7 @@ def sub_s(template: "Template", value: str) -> str:
         else:
             result = ref(template, var)
 
-        return result
+        return str(result)
 
     reVar = r"(?!\$\{\!)\$\{(\w+[^}]*)\}"
 

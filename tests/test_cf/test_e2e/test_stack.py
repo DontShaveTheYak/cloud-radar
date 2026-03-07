@@ -20,6 +20,7 @@ def default_params():
     return parameters
 
 
+@pytest.mark.e2e
 def test_constructor(template_dir, default_params):
     template = template_dir / "log_bucket" / "log_bucket.yaml"
 
@@ -47,6 +48,7 @@ def test_constructor(template_dir, default_params):
     assert stack.config.config.project.regions == regions
 
 
+@pytest.mark.e2e
 def test_tc_config():
     # We have to go a second level down
     # because it looks two levels up for the function
