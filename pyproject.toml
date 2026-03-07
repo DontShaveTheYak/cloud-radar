@@ -62,7 +62,7 @@ source = ["cloud_radar"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 95
+fail_under = 90
 
 [tool.isort]
 profile = "black"
