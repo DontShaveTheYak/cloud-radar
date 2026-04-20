@@ -1,0 +1,67 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-replicate-multiple-resources
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Conditions:
+  TwoNatGateways: !Equals [!Ref "AWS::Region", "us-east-1"]
+  ThreeNatGateways: !Equals [!Ref "AWS::Region", "us-west-2"]
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+  PublicSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !Select [2, !GetAZs ""]
+  NatGatewayA:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt
+        - NatGatewayAttachmentA
+        - AllocationId
+      SubnetId: !Ref PublicSubnetA
+  NatGatewayB:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt
+        - NatGatewayAttachmentB
+        - AllocationId
+      SubnetId: !Ref PublicSubnetB
+    Condition: TwoNatGateways
+  NatGatewayC:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt
+        - NatGatewayAttachmentC
+        - AllocationId
+      SubnetId: !Ref PublicSubnetC
+    Condition: ThreeNatGateways
+  NatGatewayAttachmentA:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatGatewayAttachmentB:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+    Condition: TwoNatGateways
+  NatGatewayAttachmentC:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+    Condition: ThreeNatGateways

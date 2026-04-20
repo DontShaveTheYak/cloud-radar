@@ -1,0 +1,24 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-replicate-resource
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  SnsTopicSuccess:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: Success.fifo
+      FifoTopic: true
+  SnsTopicFailure:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: Failure.fifo
+      FifoTopic: true
+  SnsTopicTimeout:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: Timeout.fifo
+      FifoTopic: true
+  SnsTopicUnknown:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: Unknown.fifo
+      FifoTopic: true
