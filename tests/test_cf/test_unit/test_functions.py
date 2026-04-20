@@ -638,6 +638,61 @@ def test_transform(fake_t):
     assert result == "TestName"
 
 
+def test_for_each(fake_t: Template):
+    # Test invalid inputs
+    with pytest.raises(TypeError) as e:
+        functions.for_each(fake_t, "not a list")
+    assert "must be a List" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        functions.for_each(fake_t, ["id"])
+    assert "contain an identifier, a collection, and an output template" in str(e.value)
+
+    with pytest.raises(TypeError) as e:
+        functions.for_each(fake_t, [123, [], {}])
+    assert "identifier must be a String" in str(e.value)
+
+    with pytest.raises(TypeError) as e:
+        functions.for_each(fake_t, ["id", "not list or dict", {}])
+    assert "collection must be a List or Dict" in str(e.value)
+
+    with pytest.raises(TypeError) as e:
+        functions.for_each(fake_t, ["id", [], "not dict"])
+    assert "output template must be a Dict" in str(e.value)
+
+    # Test with list collection
+    values = ["Bucket", ["A", "B"], {"Bucket${Bucket}": {"BucketName": "${Bucket}"}}]
+    result = functions.for_each(fake_t, values)
+    expected = {"BucketA": {"BucketName": "A"}, "BucketB": {"BucketName": "B"}}
+    assert result == expected
+
+    # Test with dict collection
+    values = [
+        "Env",
+        {"dev": "development", "prod": "production"},
+        {"${Env}Config": {"Name": "${Env}"}},
+    ]
+    result = functions.for_each(fake_t, values)
+    expected = {
+        "developmentConfig": {"Name": "development"},
+        "productionConfig": {"Name": "production"},
+    }
+    assert result == expected
+
+    # Test nested substitution
+    values = [
+        "Item",
+        ["X", "Y"],
+        {"Resource${Item}": {"Config": {"Key": "${Item}", "Value": "val"}}},
+    ]
+    result = functions.for_each(fake_t, values)
+    expected = {
+        "ResourceX": {"Config": {"Key": "X", "Value": "val"}},
+        "ResourceY": {"Config": {"Key": "Y", "Value": "val"}},
+    }
+    assert result == expected
+
+
 def test_ref():
     template = {"Parameters": {"foo": {"Value": "bar"}}, "Resources": {}}
 

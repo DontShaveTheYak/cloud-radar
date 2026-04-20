@@ -813,6 +813,127 @@ def transform(_t: "Template", values: Any) -> str:
     return values["Name"]
 
 
+def _validate_for_each_inputs(values: Any) -> tuple[str, Any, dict]:
+    """Validate inputs for Fn::ForEach and extract components.
+
+    Args:
+        values: The values passed to the function.
+
+    Returns:
+        Tuple of (identifier, collection, output_template)
+
+    Raises:
+        TypeError: If values is not a list or components have wrong types.
+        ValueError: If length of values is not 3.
+    """
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::ForEach - The values must be a List, not {type(values).__name__}."
+        )
+
+    if len(values) != 3:
+        raise ValueError(
+            (
+                "Fn::ForEach - The values must contain an identifier, a collection, "
+                "and an output template."
+            )
+        )
+
+    identifier = values[0]
+    collection = values[1]
+    output_template = values[2]
+
+    if not isinstance(identifier, str):
+        raise TypeError(
+            f"Fn::ForEach - The identifier must be a String, not {type(identifier).__name__}."
+        )
+
+    if not isinstance(collection, (list, dict)):
+        raise TypeError(
+            (
+                "Fn::ForEach - The collection must be a List or Dict, "
+                f"not {type(collection).__name__}."
+            )
+        )
+
+    if not isinstance(output_template, dict):
+        raise TypeError(
+            (
+                "Fn::ForEach - The output template must be a Dict, not "
+                f"{type(output_template).__name__}."
+            )
+        )
+
+    return identifier, collection, output_template
+
+
+def _substitute_for_each(obj: Any, identifier: str, replacement: Any) -> Any:
+    """Recursively substitute ${identifier} with replacement in obj.
+
+    Args:
+        obj: The object to substitute in.
+        identifier: The identifier to replace.
+        replacement: The replacement value.
+
+    Returns:
+        The object with substitutions applied.
+    """
+    if isinstance(obj, str):
+        return obj.replace(f"${{{identifier}}}", str(replacement))
+    elif isinstance(obj, dict):
+        return {
+            _substitute_for_each(k, identifier, replacement): _substitute_for_each(
+                v, identifier, replacement
+            )
+            for k, v in obj.items()
+        }
+    elif isinstance(obj, list):
+        return [_substitute_for_each(item, identifier, replacement) for item in obj]
+    else:
+        return obj
+
+
+def _process_for_each_collection(
+    identifier: str, collection: Any, output_template: dict
+) -> dict:
+    """Process the collection and build the result dictionary.
+
+    Args:
+        identifier: The substitution identifier.
+        collection: The collection to iterate over.
+        output_template: The template to substitute into.
+
+    Returns:
+        The expanded result dictionary.
+    """
+    result = {}
+
+    if isinstance(collection, list):
+        for item in collection:
+            substituted = _substitute_for_each(output_template, identifier, item)
+            result.update(substituted)
+    else:  # dict
+        for _key, item in collection.items():
+            substituted = _substitute_for_each(output_template, identifier, item)
+            result.update(substituted)
+
+    return result
+
+
+def for_each(_t: "Template", values: Any) -> Dict[str, Any]:
+    """Solves AWS Fn::ForEach intrinsic function.
+
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Returns:
+        Dict[str, Any]: The expanded output dictionary.
+    """
+    identifier, collection, output_template = _validate_for_each_inputs(values)
+    return _process_for_each_collection(identifier, collection, output_template)
+
+
 def ref(template: "Template", var_name: str) -> Any:
     """Takes the name of a parameter, resource or pseudo variable and finds the value for it.
 
@@ -955,6 +1076,7 @@ TRANSFORMS: Dict[str, Dispatch] = {
     "AWS::Include": {},
     "AWS::LanguageExtensions": {
         "Fn::FindInMap": enhanced_find_in_map,
+        "Fn::ForEach": for_each,
     },
     "AWS::SecretsManager-2020-07-23": {},
     "AWS::Serverless-2016-10-31": {},

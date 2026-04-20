@@ -317,22 +317,82 @@ class Template:
 
         return Template.StackId
 
+    def transform(self) -> "Template":
+        """Apply template transforms if any are specified.
+
+        Currently supports AWS::LanguageExtensions transform with Fn::ForEach expansion.
+
+        Returns:
+            Template: A new Template instance with transforms applied.
+        """
+        if not self.transforms:
+            return self
+
+        # Check if we need to apply LanguageExtensions transform
+        needs_transform = False
+        if isinstance(self.transforms, str):
+            needs_transform = self.transforms == "AWS::LanguageExtensions"
+        elif isinstance(self.transforms, list):
+            needs_transform = "AWS::LanguageExtensions" in self.transforms
+
+        print(f"Needs transform? {needs_transform}")
+        if not needs_transform:
+            return self
+
+        # Apply LanguageExtensions transform - expand Fn::ForEach
+        transformed_template = self._apply_foreach_transform(self.template.copy())
+
+        # Create new template instance with transformed data
+        return Template(transformed_template, self.imports, self.dynamic_references)
+
+    def _apply_foreach_transform(self, data: Any) -> Any:
+        """Recursively apply Fn::ForEach expansion to the data structure.
+
+        Args:
+            data: The data structure to transform (dict, list, or primitive)
+
+        Returns:
+            The transformed data structure
+        """
+        if isinstance(data, dict):
+            transformed = {}
+            for key, value in data.items():
+                if key.startswith("Fn::ForEach::"):
+                    # This is a ForEach function call
+                    if not isinstance(value, list) or len(value) != 3:
+                        raise ValueError(f"Invalid Fn::ForEach structure for {key}")
+                    result = functions.for_each(self, value)
+                    # ForEach returns a dict, so merge it into the parent
+                    transformed.update(result)
+                    # Don't include the original Fn::ForEach key
+                else:
+                    # Recursively transform the value
+                    transformed[key] = self._apply_foreach_transform(value)
+            return transformed
+        elif isinstance(data, list):
+            return [self._apply_foreach_transform(item) for item in data]
+        else:
+            return data
+
     def create_stack(
         self,
         params: Optional[Dict[str, str]] = None,
         region: Optional[str] = None,
         parameters_file: Optional[str] = None,
-    ):
+    ) -> Stack:
+        # Apply transforms first if needed
+        transformed_template = self.transform()
+
         if region:
-            self.Region = region
-        self.StackId = self._get_populated_stack_id()
+            transformed_template.Region = region
+        transformed_template.StackId = transformed_template._get_populated_stack_id()
 
-        self.render(params, parameters_file=parameters_file)
+        transformed_template.render(params, parameters_file=parameters_file)
 
-        stack = Stack(self.template)
+        stack = Stack(transformed_template.template)
 
         # Evaluate any hooks prior to returning this stack
-        self.Hooks.evaluate_resource_hooks(stack, self)
+        transformed_template.Hooks.evaluate_resource_hooks(stack, transformed_template)
 
         return stack
 
