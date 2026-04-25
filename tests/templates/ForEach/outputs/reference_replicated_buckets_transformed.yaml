@@ -1,0 +1,78 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-outputs.html#intrinsic-function-reference-foreach-example-replicate-outputs
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Resources:
+  S3BucketA:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      MetricsConfigurations:
+        - Id: EntireBucketA
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+        RoutingRules:
+          - RoutingRuleCondition:
+              HttpErrorCodeReturnedEquals: '404'
+              KeyPrefixEquals: out1/
+            RedirectRule:
+              HostName: ec2-11-22-333-44.compute-1.amazonaws.com
+              ReplaceKeyPrefixWith: report-404/
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+  S3BucketB:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      MetricsConfigurations:
+        - Id: EntireBucketB
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+        RoutingRules:
+          - RoutingRuleCondition:
+              HttpErrorCodeReturnedEquals: '404'
+              KeyPrefixEquals: out1/
+            RedirectRule:
+              HostName: ec2-11-22-333-44.compute-1.amazonaws.com
+              ReplaceKeyPrefixWith: report-404/
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+  S3BucketC:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      MetricsConfigurations:
+        - Id: EntireBucketC
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+        RoutingRules:
+          - RoutingRuleCondition:
+              HttpErrorCodeReturnedEquals: '404'
+              KeyPrefixEquals: out1/
+            RedirectRule:
+              HostName: ec2-11-22-333-44.compute-1.amazonaws.com
+              ReplaceKeyPrefixWith: report-404/
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+Outputs:
+  S3BucketAArn:
+    Value: !GetAtt [S3BucketA, Arn]
+  S3BucketADomainName:
+    Value: !GetAtt [S3BucketA, DomainName]
+  S3BucketAWebsiteURL:
+    Value: !GetAtt [S3BucketA, WebsiteURL]
+  S3BucketBArn:
+    Value: !GetAtt [S3BucketB, Arn]
+  S3BucketBDomainName:
+    Value: !GetAtt [S3BucketB, DomainName]
+  S3BucketBWebsiteURL:
+    Value: !GetAtt [S3BucketB, WebsiteURL]
+  S3BucketCArn:
+    Value: !GetAtt [S3BucketC, Arn]
+  S3BucketCDomainName:
+    Value: !GetAtt [S3BucketC, DomainName]
+  S3BucketCWebsiteURL:
+    Value: !GetAtt [S3BucketC, WebsiteURL]

@@ -401,9 +401,11 @@ def test_get_region_azs(mocker):
 
 
 def test_fetch_region_data(mocker):
+    functions._fetch_region_data.cache_clear()
+
     mock_post = mocker.patch("cloud_radar.cf.unit.functions.requests.get")
     mock_json = mocker.patch("cloud_radar.cf.unit.functions.json.loads")
-    mock_json.return_value = "TestData"
+    mock_json.return_value = [{"code": "us-east-1", "zones": ["us-east-1a"]}]
 
     mock_r = mock_post.return_value
 
@@ -421,9 +423,11 @@ def test_fetch_region_data(mocker):
 
     result = functions._fetch_region_data()
 
-    assert result == "TestData"
+    assert result == [{"code": "us-east-1", "zones": ["us-east-1a"]}]
 
     mock_r.raise_for_status.assert_not_called()
+
+    functions._fetch_region_data.cache_clear()
 
 
 def test_import_value():

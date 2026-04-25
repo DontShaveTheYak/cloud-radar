@@ -5,6 +5,7 @@ and Condition functions.
 """
 
 import base64 as b64
+import copy
 import ipaddress
 import json
 import re
@@ -867,34 +868,121 @@ def _validate_for_each_inputs(values: Any) -> tuple[str, Any, dict]:
     return identifier, collection, output_template
 
 
-def _substitute_for_each(obj: Any, identifier: str, replacement: Any) -> Any:
-    """Recursively substitute ${identifier} with replacement in obj.
+def _substitute_for_each(obj: Any, replacements: list) -> Any:
+    """Recursively substitute ${identifier} and other patterns with replacement in obj.
+    Also handles CloudFormation intrinsic functions like {"Ref": "identifier"}.
+    Handles nested Fn::ForEach by recursively processing the object.
+
+    Supports substitution patterns:
+    - ${identifier}  (standard pattern - use value as-is)
+    - &{identifier}  (alternative pattern - strip non-alphanumeric characters from value)
 
     Args:
         obj: The object to substitute in.
-        identifier: The identifier to replace.
-        replacement: The replacement value.
+        replacements: list of tuples containing
+            (identifier: The identifier to replace, replacement: The replacement value,
+            alphanumeric_replacement: replacement but with non-alpha characters removed)
 
     Returns:
         The object with substitutions applied.
     """
-    if isinstance(obj, str):
-        return obj.replace(f"${{{identifier}}}", str(replacement))
-    elif isinstance(obj, dict):
-        return {
-            _substitute_for_each(k, identifier, replacement): _substitute_for_each(
-                v, identifier, replacement
-            )
-            for k, v in obj.items()
-        }
-    elif isinstance(obj, list):
-        return [_substitute_for_each(item, identifier, replacement) for item in obj]
-    else:
+    if not replacements:
+        # Base case: no more replacements to apply
         return obj
+
+    # Get the first replacement tuple
+    identifier, replacement, alphanumeric_replacement = replacements[0]
+    remaining_replacements = replacements[1:]
+
+    if isinstance(obj, str):
+        # Try standard pattern first (keep value as-is)
+        result = obj.replace(f"${{{identifier}}}", str(replacement))
+        # Then try alternative pattern (alphanumeric only)
+        result = result.replace(f"&{{{identifier}}}", alphanumeric_replacement)
+        # Apply remaining replacements to the result
+        return _substitute_for_each(result, remaining_replacements)
+    elif isinstance(obj, dict):
+        # Check for nested Fn::ForEach and preserve them for later processing
+        result_dict = {}
+        for key, value in obj.items():
+            # Don't substitute into Fn::ForEach keys themselves, but do substitute their values
+            if key.startswith("Fn::ForEach::"):
+                # Substitute into the nested ForEach value
+                # (which is [identifier, collection, template])
+                if isinstance(value, list) and len(value) == 3:
+                    result_dict[key] = _substitute_for_each(
+                        value, [(identifier, replacement, alphanumeric_replacement)]
+                    )
+                else:
+                    result_dict[key] = value
+            elif len(obj) == 1 and "Ref" in obj and obj["Ref"] == identifier:
+                # Replace {"Ref": "identifier"} with the replacement value
+                return _substitute_for_each(replacement, remaining_replacements)
+            elif len(obj) == 1 and "Fn::Sub" in obj:
+                # Handle Fn::Sub with variable substitution
+                sub_value = obj["Fn::Sub"]
+                if isinstance(sub_value, str):
+                    sub_result = sub_value.replace(
+                        f"${{{identifier}}}", str(replacement)
+                    )
+                    sub_result = sub_result.replace(
+                        f"&{{{identifier}}}", alphanumeric_replacement
+                    )
+                    return _substitute_for_each(
+                        {"Fn::Sub": sub_result}, remaining_replacements
+                    )
+                elif isinstance(sub_value, list) and len(sub_value) == 2:
+                    # Fn::Sub with variables dict
+                    template_str, variables = sub_value
+                    if isinstance(template_str, str):
+                        template_str = template_str.replace(
+                            f"${{{identifier}}}", str(replacement)
+                        )
+                        template_str = template_str.replace(
+                            f"&{{{identifier}}}", alphanumeric_replacement
+                        )
+                    if isinstance(variables, dict):
+                        variables = _substitute_for_each(
+                            variables,
+                            [(identifier, replacement, alphanumeric_replacement)],
+                        )
+                    return _substitute_for_each(
+                        {"Fn::Sub": [template_str, variables]}, remaining_replacements
+                    )
+                else:
+                    return _substitute_for_each(obj, remaining_replacements)
+            else:
+                # Recursively substitute in dict keys and values
+                new_key = _substitute_for_each(
+                    key, [(identifier, replacement, alphanumeric_replacement)]
+                )
+                new_value = _substitute_for_each(
+                    value, [(identifier, replacement, alphanumeric_replacement)]
+                )
+                result_dict[new_key] = new_value
+
+        # Apply remaining replacements to the result dict
+        return _substitute_for_each(result_dict, remaining_replacements)
+    elif isinstance(obj, list):
+        # Recursively substitute in list items
+        result_list = [
+            _substitute_for_each(
+                item, [(identifier, replacement, alphanumeric_replacement)]
+            )
+            for item in obj
+        ]
+        # Apply remaining replacements
+        return _substitute_for_each(result_list, remaining_replacements)
+    else:
+        # For other types, just apply remaining replacements
+        return _substitute_for_each(obj, remaining_replacements)
 
 
 def _process_for_each_collection(
-    identifier: str, collection: Any, output_template: dict
+    identifier: str,
+    collection: Any,
+    output_template: dict,
+    post_process: Optional[Callable[[Any], Any]] = None,
 ) -> dict:
     """Process the collection and build the result dictionary.
 
@@ -910,17 +998,37 @@ def _process_for_each_collection(
 
     if isinstance(collection, list):
         for item in collection:
-            substituted = _substitute_for_each(output_template, identifier, item)
+
+            # For &{} pattern, strip non-alphanumeric characters from replacement
+            alphanumeric_replacement = re.sub(r"[^a-zA-Z0-9]", "", str(item))
+
+            substituted = _substitute_for_each(
+                output_template, [(identifier, item, alphanumeric_replacement)]
+            )
+            if post_process is not None:
+                substituted = post_process(substituted)
             result.update(substituted)
     else:  # dict
         for _key, item in collection.items():
-            substituted = _substitute_for_each(output_template, identifier, item)
+
+            # For &{} pattern, strip non-alphanumeric characters from replacement
+            alphanumeric_replacement = re.sub(r"[^a-zA-Z0-9]", "", str(item))
+
+            substituted = _substitute_for_each(
+                output_template, [(identifier, item, alphanumeric_replacement)]
+            )
+            if post_process is not None:
+                substituted = post_process(substituted)
             result.update(substituted)
 
     return result
 
 
-def for_each(_t: "Template", values: Any) -> Dict[str, Any]:
+def for_each(
+    _t: "Template",
+    values: Any,
+    post_process: Optional[Callable[[Any], Any]] = None,
+) -> Dict[str, Any]:
     """Solves AWS Fn::ForEach intrinsic function.
 
     Args:
@@ -930,8 +1038,13 @@ def for_each(_t: "Template", values: Any) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: The expanded output dictionary.
     """
+    if isinstance(values, list) and len(values) == 3:
+        values = [values[0], _t.resolve_values(copy.deepcopy(values[1])), values[2]]
+
     identifier, collection, output_template = _validate_for_each_inputs(values)
-    return _process_for_each_collection(identifier, collection, output_template)
+    return _process_for_each_collection(
+        identifier, collection, output_template, post_process=post_process
+    )
 
 
 def ref(template: "Template", var_name: str) -> Any:

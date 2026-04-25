@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import re
 import uuid
@@ -161,6 +162,8 @@ class Template:
 
         self.template = self.remove_condtional_resources(self.template)
 
+        self.template = self.remove_novalue_properties(self.template)
+
         return self.template
 
     def load_params(self, parameter_file_path) -> Dict[str, Any]:
@@ -267,12 +270,18 @@ class Template:
                     r_value["Properties"] = {}
 
                 if is_conditional(r_value):
-                    condition_value = get_condition_value(
-                        r_value["Condition"], template["Conditions"]
+                    condition_value = self._resolve_resource_condition(
+                        r_value["Condition"], template.get("Conditions", {})
                     )
 
-                    if not condition_value:
-                        continue
+                    if condition_value == self.NoValue:
+                        del r_value["Condition"]
+                    elif isinstance(condition_value, bool):
+                        if not condition_value:
+                            continue
+                        del r_value["Condition"]
+                    else:
+                        r_value["Condition"] = condition_value
 
                 template[section][r_name] = self.resolve_values(r_value)
 
@@ -294,13 +303,58 @@ class Template:
                 if not is_conditional(r_value):
                     continue
 
-                condition_value = get_condition_value(
-                    r_value["Condition"], template["Conditions"]
+                condition_value = self._resolve_resource_condition(
+                    r_value["Condition"], template.get("Conditions", {})
                 )
+
+                if condition_value == self.NoValue:
+                    del template[section][r_name]["Condition"]
+                    continue
+
+                if isinstance(condition_value, bool):
+                    if not condition_value:
+                        del template[section][r_name]
+                    else:
+                        del template[section][r_name]["Condition"]
+                    continue
+
+                template[section][r_name]["Condition"] = condition_value
 
                 if not condition_value:
                     del template[section][r_name]
                     continue
+
+        return template
+
+    def remove_novalue_properties(self, template: Dict[str, Any]) -> Dict[str, Any]:
+        """Recursively removes all properties that have AWS::NoValue as their value.
+
+        This handles properties that resolved to the NoValue sentinel during rendering.
+        """
+
+        def filter_novalue(obj: Any) -> Any:
+            """Recursively filter out AWS::NoValue from the object."""
+            if isinstance(obj, dict):
+                # Filter out properties with NoValue
+                filtered = {}
+                for key, value in obj.items():
+                    # Recursively filter the value first
+                    filtered_value = filter_novalue(value)
+                    # Skip properties that resolve to NoValue
+                    if filtered_value != self.NoValue:
+                        filtered[key] = filtered_value
+                return filtered
+            elif isinstance(obj, list):
+                return [filter_novalue(item) for item in obj]
+            else:
+                return obj
+
+        # Apply filtering to Resources and Outputs sections
+        sections_to_filter = ["Resources", "Outputs"]
+
+        for section in sections_to_filter:
+            if section in template:
+                template[section] = filter_novalue(template[section])
 
         return template
 
@@ -317,7 +371,11 @@ class Template:
 
         return Template.StackId
 
-    def transform(self) -> "Template":
+    def transform(
+        self,
+        params: Optional[Dict[str, str]] = None,
+        parameters_file: Optional[str] = None,
+    ) -> "Template":
         """Apply template transforms if any are specified.
 
         Currently supports AWS::LanguageExtensions transform with Fn::ForEach expansion.
@@ -335,12 +393,34 @@ class Template:
         elif isinstance(self.transforms, list):
             needs_transform = "AWS::LanguageExtensions" in self.transforms
 
-        print(f"Needs transform? {needs_transform}")
         if not needs_transform:
             return self
 
+        transform_params = params
+        if parameters_file:
+            loaded_params = self.load_params(parameters_file)
+            if transform_params:
+                loaded_params.update(transform_params)
+            transform_params = loaded_params
+
+        working_template = Template(
+            copy.deepcopy(self.template), self.imports, self.dynamic_references
+        )
+
+        if "Parameters" in working_template.template:
+            t_params = working_template.template["Parameters"]
+            can_set_parameters = bool(transform_params) or all(
+                "Default" in definition
+                or (transform_params is not None and name in transform_params)
+                for name, definition in t_params.items()
+            )
+            if can_set_parameters:
+                working_template.set_parameters(transform_params)
+
         # Apply LanguageExtensions transform - expand Fn::ForEach
-        transformed_template = self._apply_foreach_transform(self.template.copy())
+        transformed_template = working_template._apply_foreach_transform(
+            copy.deepcopy(working_template.template)
+        )
 
         # Create new template instance with transformed data
         return Template(transformed_template, self.imports, self.dynamic_references)
@@ -361,7 +441,9 @@ class Template:
                     # This is a ForEach function call
                     if not isinstance(value, list) or len(value) != 3:
                         raise ValueError(f"Invalid Fn::ForEach structure for {key}")
-                    result = functions.for_each(self, value)
+                    result = functions.for_each(
+                        self, value, post_process=self._apply_foreach_transform
+                    )
                     # ForEach returns a dict, so merge it into the parent
                     transformed.update(result)
                     # Don't include the original Fn::ForEach key
@@ -381,7 +463,9 @@ class Template:
         parameters_file: Optional[str] = None,
     ) -> Stack:
         # Apply transforms first if needed
-        transformed_template = self.transform()
+        transformed_template = self.transform(
+            params=params, parameters_file=parameters_file
+        )
 
         if region:
             transformed_template.Region = region
@@ -413,6 +497,8 @@ class Template:
         if isinstance(data, dict):
             for key, value in data.items():
                 if key == "Ref":
+                    if not isinstance(value, str):
+                        value = self.resolve_values(value)
                     return functions.ref(self, value)
 
                 # This takes care of keys that not intrinsic functions,
@@ -439,12 +525,22 @@ class Template:
                     data[key] = self.resolve_values(value)
                     continue
 
-                if key not in self.allowed_functions:
+                # If it is a for_each, the key in the allowed functions
+                # won't be the full key we have here
+                if key not in self.allowed_functions and not (
+                    key.startswith("Fn::ForEach::")
+                    and "Fn::ForEach" in self.allowed_functions
+                ):
                     raise ValueError(f"{key} with value ({value}) not allowed here")
 
                 value = self.resolve_values(value)
 
-                funct_result = self.allowed_functions[key](self, value)
+                if key == "Fn::ForEach":
+                    funct_result = self.allowed_functions[key](
+                        self, value, self.resolve_values
+                    )
+                else:
+                    funct_result = self.allowed_functions[key](self, value)
 
                 if isinstance(funct_result, str):
                     # If the result is a string then process any
@@ -460,6 +556,28 @@ class Template:
             return self.resolve_dynamic_references(data)
         else:
             return data
+
+    def _resolve_resource_condition(
+        self, condition: Any, conditions: Dict[str, bool]
+    ) -> Union[str, bool]:
+        """Resolve a resource or output Condition to a usable value."""
+        if isinstance(condition, str):
+            return get_condition_value(condition, conditions)
+
+        resolved_condition = self.resolve_values(copy.deepcopy(condition))
+        if resolved_condition == self.NoValue:
+            return self.NoValue
+
+        if isinstance(resolved_condition, bool):
+            return resolved_condition
+
+        if isinstance(resolved_condition, str):
+            return get_condition_value(resolved_condition, conditions)
+
+        raise TypeError(
+            "Resource Condition must resolve to a String, Bool, or AWS::NoValue, "
+            f"not {type(resolved_condition).__name__}."
+        )
 
     def resolve_dynamic_references(self, data: str) -> str:
         """
