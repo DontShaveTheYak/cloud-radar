@@ -951,6 +951,32 @@ def _substitute_for_each(obj: Any, replacements: list) -> Any:
                     )
                 else:
                     return _substitute_for_each(obj, remaining_replacements)
+            elif len(obj) == 1 and "Fn::GetAtt" in obj:
+                # We need to do some special handling for cases like
+                # tests/templates/ForEach/outputs/reference_replicated_buckets.yaml
+                # where the loop identifier is used on the right of the GetAtt
+                # function call. This is potentially a tricky one as some of the
+                # examples do use loop identifiers that match legitimate
+                # attribute names.
+                get_att_value = obj["Fn::GetAtt"]
+                if isinstance(get_att_value, list) and len(get_att_value) == 2:
+                    resource_name = _substitute_for_each(
+                        get_att_value[0],
+                        [(identifier, replacement, alphanumeric_replacement)],
+                    )
+                    attribute_name = get_att_value[1]
+                    if attribute_name == identifier:
+                        attribute_name = replacement
+                    else:
+                        attribute_name = _substitute_for_each(
+                            attribute_name,
+                            [(identifier, replacement, alphanumeric_replacement)],
+                        )
+                    return _substitute_for_each(
+                        {"Fn::GetAtt": [resource_name, attribute_name]},
+                        remaining_replacements,
+                    )
+                return _substitute_for_each(obj, remaining_replacements)
             else:
                 # Recursively substitute in dict keys and values
                 new_key = _substitute_for_each(

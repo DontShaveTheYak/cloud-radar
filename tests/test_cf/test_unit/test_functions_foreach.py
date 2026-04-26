@@ -50,8 +50,16 @@ def test_foreach_transformed(original_template, expected_template):
     expected = load_template(expected_template)
     expected_stack = expected.create_stack()
 
-    # Compare the fully rendered Resources sections
-    assert rendered_stack["Resources"] == expected_stack["Resources"]
+    # Compare the fully rendered sections
+    for section in ["Resources", "Outputs", "Conditions"]:
+
+        if section in expected_stack:
+            assert (
+                section in rendered_stack
+            ), f"Expected rendered stack to have a {section}"
+            assert (
+                rendered_stack[section] == expected_stack[section]
+            ), f"Expected section {section} to match"
 
     # Transform section should still be present in the transformed template
     assert "Transform" in transformed_template.template
