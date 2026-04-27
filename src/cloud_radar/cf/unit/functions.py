@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional  # noqa: I
 
 import requests
 
-from ._functions_foreach import for_each
+from ._functions_foreach import for_each  # noqa: F401
 
 if TYPE_CHECKING:
     from ._template import Template
@@ -956,8 +956,10 @@ TRANSFORMS: Dict[str, Dispatch] = {
     "AWS::CodeDeployBlueGreen": {},
     "AWS::Include": {},
     "AWS::LanguageExtensions": {
+        # Fn::ForEach is expanded during the dedicated LanguageExtensions
+        # transform pass in _template.py / _functions_foreach.py rather than
+        # being resolved through the generic intrinsic dispatch path.
         "Fn::FindInMap": enhanced_find_in_map,
-        "Fn::ForEach": for_each,
     },
     "AWS::SecretsManager-2020-07-23": {},
     "AWS::Serverless-2016-10-31": {},

@@ -421,3 +421,54 @@ def for_each(
         output_template,
         post_process=post_process,
     )
+
+
+def _expand_foreach_entry(template: "Template", key: str, value: Any) -> dict:
+    """Expand a single Fn::ForEach entry during template transformation.
+
+    Args:
+        template (Template): The template being tested.
+        key (str): The Fn::ForEach key.
+        value (Any): The Fn::ForEach value.
+
+    Raises:
+        ValueError: If the Fn::ForEach structure is invalid.
+
+    Returns:
+        dict: The expanded output for the ForEach entry.
+    """
+
+    if not isinstance(value, list) or len(value) != 3:
+        raise ValueError(f"Invalid Fn::ForEach structure for {key}")
+
+    return for_each(
+        template,
+        value,
+        post_process=lambda item: apply_foreach_transform(template, item),
+    )
+
+
+def apply_foreach_transform(template: "Template", data: Any) -> Any:
+    """Recursively expand Fn::ForEach entries in a template structure.
+
+    Args:
+        template (Template): The template being tested.
+        data (Any): The data structure to transform.
+
+    Returns:
+        Any: The transformed data structure.
+    """
+
+    if isinstance(data, dict):
+        transformed = {}
+        for key, value in data.items():
+            if key.startswith("Fn::ForEach::"):
+                transformed.update(_expand_foreach_entry(template, key, value))
+            else:
+                transformed[key] = apply_foreach_transform(template, value)
+        return transformed
+
+    if isinstance(data, list):
+        return [apply_foreach_transform(template, item) for item in data]
+
+    return data

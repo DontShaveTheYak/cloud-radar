@@ -11,6 +11,7 @@ import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
 from . import functions
+from ._functions_foreach import apply_foreach_transform
 from ._hooks import HookProcessor
 from ._stack import Stack
 
@@ -403,35 +404,12 @@ class Template:
         working_template = self._build_transform_working_template(transform_params)
 
         # Apply LanguageExtensions transform - expand Fn::ForEach
-        transformed_template = working_template._apply_foreach_transform(
-            copy.deepcopy(working_template.template)
+        transformed_template = apply_foreach_transform(
+            working_template, copy.deepcopy(working_template.template)
         )
 
         # Create new template instance with transformed data
         return Template(transformed_template, self.imports, self.dynamic_references)
-
-    def _apply_foreach_transform(self, data: Any) -> Any:
-        """Recursively apply Fn::ForEach expansion to the data structure.
-
-        Args:
-            data: The data structure to transform (dict, list, or primitive)
-
-        Returns:
-            The transformed data structure
-        """
-        if isinstance(data, dict):
-            transformed = {}
-            for key, value in data.items():
-                if key.startswith("Fn::ForEach::"):
-                    transformed.update(self._expand_foreach_entry(key, value))
-                else:
-                    # Recursively transform the value
-                    transformed[key] = self._apply_foreach_transform(value)
-            return transformed
-        elif isinstance(data, list):
-            return [self._apply_foreach_transform(item) for item in data]
-        else:
-            return data
 
     def _needs_language_extensions_transform(self) -> bool:
         """Check whether the template should apply AWS::LanguageExtensions.
@@ -496,27 +474,6 @@ class Template:
         return all(
             "Default" in definition
             for definition in working_template.template["Parameters"].values()
-        )
-
-    def _expand_foreach_entry(self, key: str, value: Any) -> dict:
-        """Expand a single Fn::ForEach entry during template transformation.
-
-        Args:
-            key (str): The Fn::ForEach key.
-            value (Any): The Fn::ForEach value.
-
-        Raises:
-            ValueError: If the Fn::ForEach structure is invalid.
-
-        Returns:
-            dict: The expanded output for the ForEach entry.
-        """
-
-        if not isinstance(value, list) or len(value) != 3:
-            raise ValueError(f"Invalid Fn::ForEach structure for {key}")
-
-        return functions.for_each(
-            self, value, post_process=self._apply_foreach_transform
         )
 
     def create_stack(
@@ -588,22 +545,12 @@ class Template:
                     data[key] = self.resolve_values(value)
                     continue
 
-                # If it is a for_each, the key in the allowed functions
-                # won't be the full key we have here
-                if key not in self.allowed_functions and not (
-                    key.startswith("Fn::ForEach::")
-                    and "Fn::ForEach" in self.allowed_functions
-                ):
+                if key not in self.allowed_functions:
                     raise ValueError(f"{key} with value ({value}) not allowed here")
 
                 value = self.resolve_values(value)
 
-                if key == "Fn::ForEach":
-                    funct_result = self.allowed_functions[key](
-                        self, value, self.resolve_values
-                    )
-                else:
-                    funct_result = self.allowed_functions[key](self, value)
+                funct_result = self.allowed_functions[key](self, value)
 
                 if isinstance(funct_result, str):
                     # If the result is a string then process any
