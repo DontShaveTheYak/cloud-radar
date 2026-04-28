@@ -572,6 +572,32 @@ def join(_t: "Template", values: Any) -> str:
     return delimiter.join(items)
 
 
+def length(_t: "Template", values: Any) -> int:
+    """Solves AWS Length intrinsic function.
+
+    References:
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-length.html
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/transform-aws-languageextensions.html
+
+    Args:
+        _t (Template): Not used.
+        values (Any): The values passed to the function.
+
+    Raises:
+        TypeError: If values is not a List.
+
+    Returns:
+        int: The number of items in the List.
+    """
+
+    if not isinstance(values, list):
+        raise TypeError(
+            f"Fn::Length - The value must be a List, not {type(values).__name__}."
+        )
+
+    return len(values)
+
+
 def select(_t: "Template", values: Any) -> Any:
     """Solves AWS Select intrinsic function.
 
@@ -955,6 +981,7 @@ TRANSFORMS: Dict[str, Dispatch] = {
     "AWS::Include": {},
     "AWS::LanguageExtensions": {
         "Fn::FindInMap": enhanced_find_in_map,
+        "Fn::Length": length,
     },
     "AWS::SecretsManager-2020-07-23": {},
     "AWS::Serverless-2016-10-31": {},

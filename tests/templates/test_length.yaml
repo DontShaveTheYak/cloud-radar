@@ -1,0 +1,37 @@
+# Example template from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/transform-aws-languageextensions.html#aws-languageextensions-examples
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Parameters:
+  QueueList:
+    Type: CommaDelimitedList
+  QueueNameParam:
+    Description: Name for your SQS queue
+    Type: String
+
+Conditions:
+  cIsLarge:
+    !Equals
+      - 'Fn::Length': !Ref QueueList
+      - 3
+Resources:
+  Queue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref QueueNameParam
+      DelaySeconds:
+        'Fn::Length': !Ref QueueList
+
+  QueueTwo:
+    Type: AWS::SQS::Queue
+    Condition: cIsLarge
+    Properties:
+      QueueName: !Sub '${QueueNameParam}-Large'
+      DelaySeconds:
+        'Fn::Length': !Ref QueueList
+
+Outputs:
+  QueueListLength:
+    Description: The length of the supplied queue list
+    Value:
+      'Fn::Length': !Ref QueueList
