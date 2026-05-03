@@ -1,0 +1,62 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-replicate-multiple-resources
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Conditions:
+  TwoNatGateways: !Equals [!Ref "AWS::Region", "us-east-1"]
+  ThreeNatGateways: !Equals [!Ref "AWS::Region", "us-west-2"]
+Mappings:
+  NatGateway:
+    Condition:
+      B: TwoNatGateways
+      C: ThreeNatGateways
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+  PublicSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !Select [2, !GetAZs ""]
+  Fn::ForEach::NatGatewayAndEIP:
+    - Identifier
+    - - A
+      - B
+      - C
+    - NatGateway${Identifier}:
+        Type: AWS::EC2::NatGateway
+        Properties:
+          AllocationId: !GetAtt
+            - !Sub NatGatewayAttachment${Identifier}
+            - AllocationId
+          SubnetId: !Ref
+            Fn::Sub: PublicSubnet${Identifier}
+        Condition: !FindInMap
+          - NatGateway
+          - Condition
+          - !Ref Identifier
+          - DefaultValue: !Ref AWS::NoValue
+      NatGatewayAttachment${Identifier}:
+        Type: AWS::EC2::EIP
+        Properties:
+          Domain: vpc
+        Condition: !FindInMap
+          - NatGateway
+          - Condition
+          - !Ref Identifier
+          - DefaultValue: !Ref AWS::NoValue

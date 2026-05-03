@@ -1,0 +1,50 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-replicate-resource-properties
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Resources:
+  InstanceA:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: true
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd.x86_64
+            systemctl start httpd.service
+            systemctl enable httpd.service
+            echo "Hello World from $(hostname -f)" > /var/www/html/index.html
+      ImageId: ami-id1
+      InstanceType: m5.xlarge
+  InstanceB:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: true
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd.x86_64
+            systemctl start httpd.service
+            systemctl enable httpd.service
+            echo "Hello World from $(hostname -f)" > /var/www/html/index.html
+      ImageId: ami-id2
+  InstanceC:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: true
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd.x86_64
+            systemctl start httpd.service
+            systemctl enable httpd.service
+            echo "Hello World from $(hostname -f)" > /var/www/html/index.html
+      ImageId: ami-id3
+      InstanceType: m5.2xlarge
+      AvailabilityZone: us-east-1a

@@ -1,0 +1,21 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-replicate-ddb-resource
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Resources:
+  'Fn::ForEach::Tables':
+    - TableName
+    - [Points, Score, Name, Leaderboard]
+    - 'DynamoDB${TableName}':
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: !Ref TableName
+          AttributeDefinitions:
+            - AttributeName: id
+              AttributeType: S
+          KeySchema:
+            - AttributeName: id
+              KeyType: HASH
+          ProvisionedThroughput:
+            ReadCapacityUnits: '5'
+            WriteCapacityUnits: '5'

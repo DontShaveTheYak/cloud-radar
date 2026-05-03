@@ -1,7 +1,18 @@
 """Nox sessions."""
 
 import sys
+from pathlib import Path
 from textwrap import dedent
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    try:
+        import tomli as tomllib  # type: ignore[no-redef]
+    except ModuleNotFoundError as exc:
+        raise SystemExit(
+            "tomllib/tomli not found. Run nox with Python 3.11+ or install 'tomli'."
+        ) from exc
 
 import nox
 
@@ -16,13 +27,12 @@ except ImportError:
     {sys.executable} -m pip install nox-poetry"""
     raise SystemExit(dedent(message)) from None
 
-nox.options.sessions = "mypy", "tests"
+with Path("pyproject.toml").open("rb") as _f:
+    _config = tomllib.load(_f)["tool"]["cloud-radar"]
 
-locations = "src", "tests", "noxfile.py"
+python_versions: list[str] = _config["python-versions"]
 
-default_python = "3.12"
-
-python_versions = ["3.9", "3.10", "3.11", "3.12", "3.13"]
+nox.options.sessions = ("tests",)
 
 
 # @session(python=default_python)
@@ -41,7 +51,7 @@ python_versions = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 @session(python=python_versions)
 def tests(session: Session) -> None:
     """Run the test suite."""
-    session.install(".")
+    session.install(".[e2e]")
     session.install("coverage[toml]", "pytest", "pygments", "pytest-mock")
     try:
         session.run(
@@ -53,19 +63,10 @@ def tests(session: Session) -> None:
             "-m",
             "not e2e",
             "tests",
+            "examples",
             *session.posargs,
         )
     finally:
         pass
         # if session.interactive:
         #     session.notify("coverage", posargs=[])
-
-
-@session(python=python_versions)
-def mypy(session: Session) -> None:
-    """Type-check using mypy."""
-    args = session.posargs or locations
-    session.run_always("poetry", "install", external=True)
-    session.run("mypy", *args)
-    if not session.posargs:
-        session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
