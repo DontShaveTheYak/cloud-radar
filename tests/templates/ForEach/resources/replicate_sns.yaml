@@ -1,0 +1,13 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-replicate-resource
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Resources:
+  'Fn::ForEach::Topics':
+    - TopicName
+    - [Success, Failure, Timeout, Unknown]
+    - 'SnsTopic${TopicName}':
+        Type: AWS::SNS::Topic
+        Properties:
+          TopicName: !Sub '${TopicName}.fifo'
+          FifoTopic: true

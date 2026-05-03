@@ -1,0 +1,32 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-nested-loop-resources
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+  'Fn::ForEach::SubnetResources':
+  - Prefix
+  - [Transit, Public]
+  - 'Nacl${Prefix}Subnet':
+      Type: AWS::EC2::NetworkAcl
+      Properties:
+        VpcId: !Ref 'VPC'
+    'Fn::ForEach::LoopInner':
+    - Suffix
+    - [A, B, C]
+    - '${Prefix}Subnet${Suffix}':
+        Type: AWS::EC2::Subnet
+        Properties:
+          VpcId: !Ref 'VPC'
+      'Nacl${Prefix}Subnet${Suffix}Association':
+        Type: AWS::EC2::SubnetNetworkAclAssociation
+        Properties:
+          SubnetId: !Ref
+            'Fn::Sub': '${Prefix}Subnet${Suffix}'
+          NetworkAclId: !Ref
+            'Fn::Sub': 'Nacl${Prefix}Subnet'

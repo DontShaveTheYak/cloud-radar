@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import re
 import uuid
@@ -10,6 +11,7 @@ import yaml  # noqa: I100
 from cfn_tools import dump_yaml, load_yaml  # type: ignore  # noqa: I100, I201
 
 from . import functions
+from ._functions_foreach import apply_foreach_transform
 from ._hooks import HookProcessor
 from ._stack import Stack
 
@@ -142,15 +144,7 @@ class Template:
         if region:
             self.Region = region
 
-        if parameters_file:
-            # Attempt to load params from a file.
-            loaded_params = self.load_params(parameters_file)
-            # If a file and a parameter dict were supplied,
-            # the parameter dict will take precedence.
-            if params:
-                loaded_params.update(params)
-
-            params = loaded_params
+        params = self._get_effective_params(params, parameters_file)
 
         self.template = yaml.load(self.raw, Loader=yaml.FullLoader)
         self.set_parameters(params)
@@ -159,7 +153,9 @@ class Template:
 
         self.template = self.render_all_sections(self.template)
 
-        self.template = self.remove_condtional_resources(self.template)
+        self.template = self.remove_conditional_resources(self.template)
+
+        self.template = self.remove_novalue_properties(self.template)
 
         return self.template
 
@@ -207,6 +203,32 @@ class Template:
 
             # If we get this far then we do not support this type of configuration file
             raise ValueError("Parameter file is not in a supported format")
+
+    def _get_effective_params(
+        self,
+        params: Optional[Dict[str, str]] = None,
+        parameters_file: Optional[str] = None,
+    ) -> Optional[Dict[str, str]]:
+        """Combine direct parameters with an optional parameters file.
+
+        Args:
+            params (Optional[Dict[str, str]], optional): Parameters passed directly.
+            parameters_file (Optional[str], optional): Path to a parameters file.
+
+        Returns:
+            Optional[Dict[str, str]]: The merged parameter values, if any.
+        """
+
+        if not parameters_file:
+            return params
+
+        loaded_params = self.load_params(parameters_file)
+        if params:
+            # If a file and a parameter dict were supplied,
+            # the parameter dict will take precedence.
+            loaded_params.update(params)
+
+        return loaded_params
 
     def load_allowed_functions(self):
         """Loads the allowed functions for this template.
@@ -267,18 +289,18 @@ class Template:
                     r_value["Properties"] = {}
 
                 if is_conditional(r_value):
-                    condition_value = get_condition_value(
-                        r_value["Condition"], template["Conditions"]
+                    condition_value = self._resolve_resource_condition(
+                        r_value["Condition"], template.get("Conditions", {})
                     )
 
-                    if not condition_value:
+                    if not self._apply_resolved_condition(r_value, condition_value):
                         continue
 
                 template[section][r_name] = self.resolve_values(r_value)
 
         return template
 
-    def remove_condtional_resources(self, template: Dict[str, Any]) -> Dict[str, Any]:
+    def remove_conditional_resources(self, template: Dict[str, Any]) -> Dict[str, Any]:
         """Removes all resources that have a condition that evaluates to False."""
 
         # These are sections that can have conditional resources
@@ -294,13 +316,59 @@ class Template:
                 if not is_conditional(r_value):
                     continue
 
-                condition_value = get_condition_value(
-                    r_value["Condition"], template["Conditions"]
+                condition_value = self._resolve_resource_condition(
+                    r_value["Condition"], template.get("Conditions", {})
                 )
 
-                if not condition_value:
+                if not self._apply_resolved_condition(
+                    template[section][r_name], condition_value
+                ):
                     del template[section][r_name]
                     continue
+
+        return template
+
+    def remove_condtional_resources(self, template: Dict[str, Any]) -> Dict[str, Any]:
+        """Backward-compatible wrapper for the misspelled conditional removal method.
+
+        Args:
+            template (Dict[str, Any]): The template to update.
+
+        Returns:
+            Dict[str, Any]: The updated template.
+        """
+
+        return self.remove_conditional_resources(template)
+
+    def remove_novalue_properties(self, template: Dict[str, Any]) -> Dict[str, Any]:
+        """Recursively removes all properties that have AWS::NoValue as their value.
+
+        This handles properties that resolved to the NoValue sentinel during rendering.
+        """
+
+        def filter_novalue(obj: Any) -> Any:
+            """Recursively filter out AWS::NoValue from the object."""
+            if isinstance(obj, dict):
+                # Filter out properties with NoValue
+                filtered = {}
+                for key, value in obj.items():
+                    # Recursively filter the value first
+                    filtered_value = filter_novalue(value)
+                    # Skip properties that resolve to NoValue
+                    if filtered_value != self.NoValue:
+                        filtered[key] = filtered_value
+                return filtered
+            elif isinstance(obj, list):
+                return [filter_novalue(item) for item in obj]
+            else:
+                return obj
+
+        # Apply filtering to Resources and Outputs sections
+        sections_to_filter = ["Resources", "Outputs"]
+
+        for section in sections_to_filter:
+            if section in template:
+                template[section] = filter_novalue(template[section])
 
         return template
 
@@ -317,22 +385,118 @@ class Template:
 
         return Template.StackId
 
+    def transform(
+        self,
+        params: Optional[Dict[str, str]] = None,
+        parameters_file: Optional[str] = None,
+    ) -> "Template":
+        """Apply template transforms if any are specified.
+
+        Currently supports AWS::LanguageExtensions transform with Fn::ForEach expansion.
+
+        Returns:
+            Template: A new Template instance with transforms applied.
+        """
+        if not self._needs_language_extensions_transform():
+            return self
+
+        transform_params = self._get_effective_params(params, parameters_file)
+        working_template = self._build_transform_working_template(transform_params)
+
+        # Apply LanguageExtensions transform - expand Fn::ForEach
+        transformed_template = apply_foreach_transform(
+            working_template, copy.deepcopy(working_template.template)
+        )
+
+        # Create new template instance with transformed data
+        return Template(transformed_template, self.imports, self.dynamic_references)
+
+    def _needs_language_extensions_transform(self) -> bool:
+        """Check whether the template should apply AWS::LanguageExtensions.
+
+        Returns:
+            bool: True if the transform should be applied.
+        """
+
+        if not self.transforms:
+            return False
+
+        if isinstance(self.transforms, str):
+            return self.transforms == "AWS::LanguageExtensions"
+
+        if isinstance(self.transforms, list):
+            return "AWS::LanguageExtensions" in self.transforms
+
+        return False
+
+    def _build_transform_working_template(
+        self, params: Optional[Dict[str, str]] = None
+    ) -> "Template":
+        """Create a working template copy for transform-time preprocessing.
+
+        Args:
+            params (Optional[Dict[str, str]], optional): Parameters to apply before
+                transform expansion. Defaults to None.
+
+        Returns:
+            Template: A working copy of the template.
+        """
+
+        working_template = copy.deepcopy(self)
+        working_template.template = copy.deepcopy(self.template)
+
+        if self._can_set_transform_parameters(working_template, params):
+            working_template.set_parameters(params)
+
+        return working_template
+
+    def _can_set_transform_parameters(
+        self,
+        working_template: "Template",
+        params: Optional[Dict[str, str]] = None,
+    ) -> bool:
+        """Check whether transform-time parameter population is safe.
+
+        Args:
+            working_template (Template): The working template copy.
+            params (Optional[Dict[str, str]], optional): Parameters to apply.
+
+        Returns:
+            bool: True if parameters can be set without missing required values.
+        """
+
+        if "Parameters" not in working_template.template:
+            return False
+
+        if params:
+            return True
+
+        return all(
+            "Default" in definition
+            for definition in working_template.template["Parameters"].values()
+        )
+
     def create_stack(
         self,
         params: Optional[Dict[str, str]] = None,
         region: Optional[str] = None,
         parameters_file: Optional[str] = None,
-    ):
+    ) -> Stack:
+        # Apply transforms first if needed
+        transformed_template = self.transform(
+            params=params, parameters_file=parameters_file
+        )
+
         if region:
-            self.Region = region
-        self.StackId = self._get_populated_stack_id()
+            transformed_template.Region = region
+        transformed_template.StackId = transformed_template._get_populated_stack_id()
 
-        self.render(params, parameters_file=parameters_file)
+        transformed_template.render(params, parameters_file=parameters_file)
 
-        stack = Stack(self.template)
+        stack = Stack(transformed_template.template)
 
         # Evaluate any hooks prior to returning this stack
-        self.Hooks.evaluate_resource_hooks(stack, self)
+        transformed_template.Hooks.evaluate_resource_hooks(stack, transformed_template)
 
         return stack
 
@@ -353,6 +517,8 @@ class Template:
         if isinstance(data, dict):
             for key, value in data.items():
                 if key == "Ref":
+                    if not isinstance(value, str):
+                        value = self.resolve_values(value)
                     return functions.ref(self, value)
 
                 # This takes care of keys that not intrinsic functions,
@@ -400,6 +566,52 @@ class Template:
             return self.resolve_dynamic_references(data)
         else:
             return data
+
+    def _resolve_resource_condition(
+        self, condition: Any, conditions: Dict[str, bool]
+    ) -> Union[str, bool]:
+        """Resolve a resource or output Condition to a usable value."""
+        if isinstance(condition, str):
+            return get_condition_value(condition, conditions)
+
+        resolved_condition = self.resolve_values(copy.deepcopy(condition))
+        if resolved_condition == self.NoValue:
+            return self.NoValue
+
+        if isinstance(resolved_condition, bool):
+            return resolved_condition
+
+        if isinstance(resolved_condition, str):
+            return get_condition_value(resolved_condition, conditions)
+
+        raise TypeError(
+            "Resource Condition must resolve to a String, Bool, or AWS::NoValue, "
+            f"not {type(resolved_condition).__name__}."
+        )
+
+    def _apply_resolved_condition(self, value: dict, condition_value: Any) -> bool:
+        """Apply a resolved condition value to a resource or output dictionary.
+
+        Args:
+            value (dict): The resource or output being updated.
+            condition_value (Any): The resolved condition value.
+
+        Returns:
+            bool: True if the value should be kept, otherwise False.
+        """
+
+        if condition_value == self.NoValue:
+            del value["Condition"]
+            return True
+
+        if isinstance(condition_value, bool):
+            if condition_value:
+                del value["Condition"]
+                return True
+            return False
+
+        value["Condition"] = condition_value
+        return True
 
     def resolve_dynamic_references(self, data: str) -> str:
         """

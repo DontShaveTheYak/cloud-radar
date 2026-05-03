@@ -1,0 +1,40 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-conditions.html#intrinsic-function-reference-foreach-example-replicated-single-condition
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  ParamA:
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+  ParamB:
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+  ParamC:
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+  ParamD:
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+Conditions:
+  IsParamAEnabled: !Equals
+    - !Ref ParamA
+    - 'true'
+  IsParamBEnabled: !Equals
+    - !Ref ParamB
+    - 'true'
+  IsParamCEnabled: !Equals
+    - !Ref ParamC
+    - 'true'
+  IsParamDEnabled: !Equals
+    - !Ref ParamD
+    - 'true'
+Resources:
+  WaitConditionHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle

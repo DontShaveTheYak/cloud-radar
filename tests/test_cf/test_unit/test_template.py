@@ -834,3 +834,73 @@ def test_load_allowed_functions_multiple_transforms():
 def test_load_allowed_functions_invalid_transform():
     with pytest.raises(ValueError):
         Template({"Transform": "InvalidTransform"})
+
+
+def test_transform_no_transform():
+    template = Template({"Resources": {"Test": {"Type": "AWS::S3::Bucket"}}})
+    transformed = template.transform()
+    assert transformed is template, "Should return self when no transform needed"
+
+
+def test_transform_language_extensions_foreach():
+    template_dict = {
+        "Transform": "AWS::LanguageExtensions",
+        "Resources": {
+            "Fn::ForEach::BucketLoop": [
+                "Bucket",
+                ["A", "B"],
+                {
+                    "Bucket${Bucket}": {
+                        "Type": "AWS::S3::Bucket",
+                        "Properties": {"BucketName": "${Bucket}"},
+                    }
+                },
+            ]
+        },
+    }
+    template = Template(template_dict)
+    transformed = template.transform()
+
+    # Should be a new instance
+    assert transformed is not template
+
+    # Should have expanded the ForEach
+    expected_resources = {
+        "BucketA": {"Type": "AWS::S3::Bucket", "Properties": {"BucketName": "A"}},
+        "BucketB": {"Type": "AWS::S3::Bucket", "Properties": {"BucketName": "B"}},
+    }
+    assert transformed.template["Resources"] == expected_resources
+
+
+def test_transform_multiple_foreach():
+    template_dict = {
+        "Transform": ["AWS::LanguageExtensions"],
+        "Resources": {
+            "Fn::ForEach::BucketLoop": [
+                "Bucket",
+                ["X", "Y"],
+                {
+                    "Bucket${Bucket}": {
+                        "Type": "AWS::S3::Bucket",
+                        "Properties": {"BucketName": "${Bucket}"},
+                    }
+                },
+            ],
+            "StaticBucket": {
+                "Type": "AWS::S3::Bucket",
+                "Properties": {"BucketName": "static"},
+            },
+        },
+    }
+    template = Template(template_dict)
+    transformed = template.transform()
+
+    expected_resources = {
+        "BucketX": {"Type": "AWS::S3::Bucket", "Properties": {"BucketName": "X"}},
+        "BucketY": {"Type": "AWS::S3::Bucket", "Properties": {"BucketName": "Y"}},
+        "StaticBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {"BucketName": "static"},
+        },
+    }
+    assert transformed.template["Resources"] == expected_resources

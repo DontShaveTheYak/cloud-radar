@@ -1,0 +1,27 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-outputs.html#intrinsic-function-reference-foreach-example-replicate-conditions
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Mappings:
+  Instances:
+    InstanceType:
+      B: m5.4xlarge
+      C: c5.2xlarge
+    ImageId:
+      A: ami-id1
+Resources:
+  'Fn::ForEach::Instances':
+    - Identifier
+    - [A, B, C]
+    - 'Instance${Identifier}':
+        Type: AWS::EC2::Instance
+        Properties:
+          InstanceType: !FindInMap [Instances, InstanceType, !Ref Identifier, DefaultValue: m5.xlarge]
+          ImageId: !FindInMap [Instances, ImageId, !Ref Identifier, DefaultValue: ami-id-default]
+Outputs:
+  SecondInstanceId:
+    Description: Instance Id for InstanceB
+    Value: !Ref InstanceB
+  SecondPrivateIp:
+    Description: Private IP for InstanceB
+    Value: !GetAtt [InstanceB, PrivateIp]

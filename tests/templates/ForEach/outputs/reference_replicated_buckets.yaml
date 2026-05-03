@@ -1,0 +1,35 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-outputs.html#intrinsic-function-reference-foreach-example-replicate-outputs
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Resources:
+  'Fn::ForEach::Buckets':
+    - Identifier
+    - [A, B, C]
+    - 'S3Bucket${Identifier}':
+        Type: AWS::S3::Bucket
+        Properties:
+          AccessControl: PublicRead
+          MetricsConfigurations:
+            - Id: !Sub 'EntireBucket${Identifier}'
+          WebsiteConfiguration:
+            IndexDocument: index.html
+            ErrorDocument: error.html
+            RoutingRules:
+              - RoutingRuleCondition:
+                  HttpErrorCodeReturnedEquals: '404'
+                  KeyPrefixEquals: out1/
+                RedirectRule:
+                  HostName: ec2-11-22-333-44.compute-1.amazonaws.com
+                  ReplaceKeyPrefixWith: report-404/
+        DeletionPolicy: Retain
+        UpdateReplacePolicy: Retain
+Outputs:
+  'Fn::ForEach::BucketOutputs':
+    - Identifier
+    - [A, B, C]
+    - 'Fn::ForEach::GetAttLoop':
+        - Property
+        - [Arn, DomainName, WebsiteURL]
+        - 'S3Bucket${Identifier}${Property}':
+            Value: !GetAtt [!Sub 'S3Bucket${Identifier}', !Ref Property]

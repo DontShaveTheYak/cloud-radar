@@ -1,0 +1,27 @@
+# Example template taken from
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-reference-replicated-resource
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Resources:
+  InstanceA:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: m5.xlarge
+      ImageId: ami-id1
+  InstanceB:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: m5.4xlarge
+      ImageId: ami-id-default
+  InstanceC:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: c5.2xlarge
+      ImageId: ami-id-default
+Outputs:
+  SecondInstanceId:
+    Description: Instance Id for InstanceB
+    Value: !Ref InstanceB
+  SecondPrivateIp:
+    Description: Private IP for InstanceB
+    Value: !GetAtt [InstanceB, PrivateIp]

@@ -63,7 +63,7 @@ def test_params_no_create_dlq(template: Template):
     # and assert that the DLQ was not created
     stack.no_resource("MyDeadLetterQueue"), "DLQ was not expected to be created"
 
-    # When the second queue is not being created, SQSQueue should not have an
-    # empty value for the redrive policy set
+    # When the second queue is not being created, SQSQueue should not have
+    # the RedrivePolicy property (it resolves to AWS::NoValue which removes the property)
     main_queue = stack.get_resource("SQSQueue")
-    assert main_queue.get_property_value("RedrivePolicy") == ""
+    assert "RedrivePolicy" not in main_queue.get_properties_value()
