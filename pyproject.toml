@@ -44,7 +44,7 @@ coverage = {extras = ["toml"], version = "^7.0.0"}
 pytest-cov = "^7.0.0"
 pytest-mock = "^3.6.1"
 isort = "^8.0.0"
-black = "^25.0.0"
+black = "^26.0.0"
 flake8 = "^7.0.0"
 flake8-black = "^0.4.0"
 flake8-isort = "^7.0.0"
