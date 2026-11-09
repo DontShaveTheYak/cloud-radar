@@ -673,14 +673,15 @@ develop = ["build", "twine"]
 
 [[package]]
 name = "flake8-bugbear"
-version = "25.11.29"
+version = "26.10.27"
 description = "A plugin for flake8 finding likely bugs and design problems in your program. Contains warnings that don't belong in pyflakes and pycodestyle."
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
+markers = "python_version < \"3.13\""
 files = [
-    {file = "flake8_bugbear-25.11.29-py3-none-any.whl", hash = "sha256:9bf15e2970e736d2340da4c0a70493db964061c9c38f708cfe1f7b2d87392298"},
-    {file = "flake8_bugbear-25.11.29.tar.gz", hash = "sha256:b5d06710f3d26e595541ad303ad4d5cb52578bd4bccbb2c2c0b2c72e243dafc8"},
+    {file = "flake8_bugbear-26.10.27-py3-none-any.whl", hash = "sha256:84be4e7533f9e9e4c98c1fdadecddb9b527aaea32509f7779ce2e6ec79ba012d"},
+    {file = "flake8_bugbear-26.10.27.tar.gz", hash = "sha256:2dbacb5149856a38ff539f21098ec5f1b70d8ebe0c87fe107dacda28a2d83955"},
 ]
 
 [package.dependencies]
@@ -689,6 +690,26 @@ flake8 = ">=7.2.0"
 
 [package.extras]
 dev = ["coverage", "hypothesis", "hypothesmith (>=0.2)", "pre-commit", "pytest", "tox"]
+
+[[package]]
+name = "flake8-bugbear"
+version = "26.11.9"
+description = "A plugin for flake8 finding likely bugs and design problems in your program. Contains warnings that don't belong in pyflakes and pycodestyle."
+optional = false
+python-versions = ">=3.11"
+groups = ["dev"]
+markers = "python_version >= \"3.13\""
+files = [
+    {file = "flake8_bugbear-26.11.9-py3-none-any.whl", hash = "sha256:4befd940ee978f654e6eb621292adfe05e7c3ae9756141feb0a5894d3d0bc2bc"},
+    {file = "flake8_bugbear-26.11.9.tar.gz", hash = "sha256:83e0aa29f57925b25f20cf6e675d822f0558f775f529858eb92a4ac63281f741"},
+]
+
+[package.dependencies]
+attrs = ">=22.2.0"
+flake8 = ">=7.2.0"
+
+[package.extras]
+dev = ["coverage", "hypothesis", "hypothesmith (>=0.2)", "mypy", "pre-commit", "pytest", "tox", "types-flake8"]
 
 [[package]]
 name = "flake8-isort"
@@ -1989,4 +2010,4 @@ e2e = ["taskcat"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "6bd2d7168d55261e11ca23371f685304585380ab4c8e7c3ea568545abdb02f2e"
+content-hash = "4cbd4f066393e97780da4d619102d0978d5dc96cf30ab970e5766954a691fd02"
